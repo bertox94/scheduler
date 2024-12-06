@@ -44,7 +44,11 @@ public class MainController {
 
         Map<String, String> mao = mapper.readValue(data, Map.class);
         Order order = new Order(new HashMap<>(mao));
-        if (order.schedule().isBefore(LocalDate.now()))
+
+        do order.schedule();
+        while (order.isExpired() || order.effectiveExecutionDate.isBefore(LocalDate.now()));
+
+        if (order.effectiveExecutionDate.isBefore(LocalDate.now()) || order.isExpired())
             return "It is in the past";
         else
             return order.effectiveExecutionDate.toString();

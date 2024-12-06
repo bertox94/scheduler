@@ -24,7 +24,7 @@ public class Scheduler {
             Order order = orders.get(i);
             order.schedule();
             while (!order.effectiveExecutionDate.isAfter(endDate) &&
-                    !order.effectiveExecutionDate.isBefore(today) &&
+                    //!order.effectiveExecutionDate.isBefore(today) &&
                     !order.isExpired()) {
                 Transaction transaction = new Transaction(order.descr, order.plannedExecutionDate, order.effectiveExecutionDate, order.amount);
                 records.add(transaction);
