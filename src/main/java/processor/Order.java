@@ -72,25 +72,29 @@ public class Order {
                 dtt = dtt.plusDays(f1);
 
                 plannedExecutionDate = dtt;
-                endDate = LocalDate.of(rfinyy, rfinmm, rfindd);
+                if (rlim)
+                    endDate = LocalDate.of(rfinyy, rfinmm, rfindd);
             } else if ("months".equals(f2)) {
                 dtt = LocalDate.of(rinityy, rinitmm, 1);
-                LocalDate enddt = LocalDate.of(rfinyy, rfinmm, 1);
 
-                if (rdd > dtt.lengthOfMonth() || "eom".equals(f3))
+                if (rdd > dtt.lengthOfMonth() || "eom".equals(f3)) {
                     dtt = dtt.withDayOfMonth(dtt.lengthOfMonth());
-                else
+                }
+                else {
                     dtt = dtt.withDayOfMonth(rdd);
-
-                if (rdd > enddt.lengthOfMonth() || "eom".equals(f3))
-                    enddt = enddt.withDayOfMonth(enddt.lengthOfMonth());
-                else
-                    enddt = enddt.withDayOfMonth(rdd);
+                }
 
                 dtt = dtt.plusMonths(f1);
-
                 plannedExecutionDate = dtt;
-                endDate = enddt;
+
+                if (rlim) {
+                    LocalDate enddt = LocalDate.of(rfinyy, rfinmm, 1);
+                    if (rdd > enddt.lengthOfMonth() || "eom".equals(f3))
+                        enddt = enddt.withDayOfMonth(enddt.lengthOfMonth());
+                    else
+                        enddt = enddt.withDayOfMonth(rdd);
+                    endDate = enddt;
+                }
             } else if ("years".equals(f2)) {
                 dtt = LocalDate.of(rinityy, rmm, 1);
                 LocalDate enddt = LocalDate.of(rfinyy, rmm, 1);
@@ -102,17 +106,18 @@ public class Order {
                 else
                     dtt = dtt.withDayOfMonth(rdd);
 
-                if (rdd > enddt.lengthOfMonth() || "eom".equals(f3))
-                    enddt = enddt.withDayOfMonth(enddt.lengthOfMonth());
-                else if ("eoy".equals(f3))
-                    enddt = enddt.withMonth(12).withDayOfMonth(enddt.lengthOfMonth());
-                else
-                    enddt = enddt.withDayOfMonth(rdd);
-
                 dtt = dtt.plusYears(f1);
-
                 plannedExecutionDate = dtt;
-                endDate = enddt;
+
+                if(rlim) {
+                    if (rdd > enddt.lengthOfMonth() || "eom".equals(f3))
+                        enddt = enddt.withDayOfMonth(enddt.lengthOfMonth());
+                    else if ("eoy".equals(f3))
+                        enddt = enddt.withMonth(12).withDayOfMonth(enddt.lengthOfMonth());
+                    else
+                        enddt = enddt.withDayOfMonth(rdd);
+                    endDate = enddt;
+                }
             }
         }
         setExecutionDate();
@@ -148,6 +153,6 @@ public class Order {
     }
 
     public boolean isExpired() {
-        return effectiveExecutionDate.isAfter(endDate);
+        return rlim && effectiveExecutionDate.isAfter(endDate);
     }
 }

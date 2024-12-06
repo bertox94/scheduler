@@ -89,7 +89,7 @@ public class MainController {
 
         LocalDate today = LocalDate.now();
         List<LocalDate> allDates = new ArrayList<>();
-        HashSet<LocalDate> distinctDates = new HashSet<>();
+        SortedSet<LocalDate> distinctDates = new TreeSet<>();
         List<Double> allDatesBalance = new ArrayList<>();
         List<Double> distinctDatesAmount = new ArrayList<>();
         List<Double> distinctDatesBalance = new ArrayList<>();
