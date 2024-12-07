@@ -62,7 +62,7 @@ public class Order {
             plannedExecutionDate = LocalDate.of(Integer.parseInt(map.get("year")), Integer.parseInt(map.get("month")), Integer.parseInt(map.get("day")));
     }
 
-    public LocalDate schedule() {
+    public void schedule() {
         if (repeated) {
             LocalDate dtt;
             long f1 = this.f1 * timesRepeated;
@@ -79,8 +79,7 @@ public class Order {
 
                 if (rdd > dtt.lengthOfMonth() || "eom".equals(f3)) {
                     dtt = dtt.withDayOfMonth(dtt.lengthOfMonth());
-                }
-                else {
+                } else {
                     dtt = dtt.withDayOfMonth(rdd);
                 }
 
@@ -109,7 +108,7 @@ public class Order {
                 dtt = dtt.plusYears(f1);
                 plannedExecutionDate = dtt;
 
-                if(rlim) {
+                if (rlim) {
                     if (rdd > enddt.lengthOfMonth() || "eom".equals(f3))
                         enddt = enddt.withDayOfMonth(enddt.lengthOfMonth());
                     else if ("eoy".equals(f3))
@@ -122,7 +121,6 @@ public class Order {
         }
         setExecutionDate();
         timesRepeated++;
-        return effectiveExecutionDate;
     }
 
     public void reschedule() {
