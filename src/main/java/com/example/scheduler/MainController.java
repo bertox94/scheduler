@@ -66,7 +66,8 @@ public class MainController {
         String[] orders = orders().split("\n");
 
         for (String line : orders) {
-            orderList.add(new Order(new HashMap<String, String>(mapper.readValue(line, Map.class))));
+            if (!line.isEmpty())
+                orderList.add(new Order(new HashMap<String, String>(mapper.readValue(line, Map.class))));
         }
 
         List<Transaction> records = Scheduler.preview(orderList, endDate);
@@ -93,10 +94,8 @@ public class MainController {
 
         LocalDate today = LocalDate.now();
         List<LocalDate> allDates = new ArrayList<>();
-        SortedSet<LocalDate> distinctDates = new TreeSet<>();
         List<Double> allDatesBalance = new ArrayList<>();
-        List<Double> distinctDatesAmount = new ArrayList<>();
-        List<Double> distinctDatesBalance = new ArrayList<>();
+        List<Double> balancePerTransaction = new ArrayList<>();
 
         while (!today.isAfter(endDate)) {
             allDates.add(today);
@@ -115,21 +114,10 @@ public class MainController {
             allDatesBalance.addLast(bal);
         }
 
-        for (Transaction record : records) {
-            distinctDates.add(record.effectiveExecutionDate);
-        }
-
         bal = balance;
-        for (LocalDate date : distinctDates) {
-            double tot = 0;
-            for (Transaction record : records) {
-                if (record.effectiveExecutionDate.equals(date)) {
-                    tot += record.amount;
-                }
-            }
-            bal += tot;
-            distinctDatesAmount.addLast(tot);
-            distinctDatesBalance.addLast(bal);
+        for (Transaction record : records) {
+            bal += record.amount;
+            balancePerTransaction.addLast(bal);
         }
 
         sj = new StringJoiner(",", "[", "]");
@@ -157,19 +145,19 @@ public class MainController {
 
 
         sj = new StringJoiner(",", "[", "]");
-        for (LocalDate date : distinctDates) {
-            sj.add("\"" + date + "\"");
+        for (Transaction transaction : records) {
+            sj.add("\"" + transaction.effectiveExecutionDate + "\"");
         }
         resp.add("\"arr4\":" + sj);
 
         sj = new StringJoiner(",", "[", "]");
-        for (Double amount : distinctDatesAmount) {
-            sj.add("\"" + amount + "\"");
+        for (Transaction transaction : records) {
+            sj.add("\"" + transaction.amount + "\"");
         }
         resp.add("\"arr5\":" + sj);
 
         sj = new StringJoiner(",", "[", "]");
-        for (Double bala : distinctDatesBalance) {
+        for (Double bala : balancePerTransaction) {
             sj.add("\"" + bala + "\"");
         }
         resp.add("\"arr6\":" + sj);
