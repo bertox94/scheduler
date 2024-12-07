@@ -46,12 +46,13 @@ public class MainController {
         Order order = new Order(new HashMap<>(mao));
 
         do order.schedule();
-        while (order.isExpired() || order.effectiveExecutionDate.isBefore(LocalDate.now()));
+        while (order.isExpired() || order.getEffectiveExecutionDate().isBefore(LocalDate.now()));
 
-        if (order.effectiveExecutionDate.isBefore(LocalDate.now()) || order.isExpired())
+        LocalDate exDate = order.getEffectiveExecutionDate();
+        if (exDate.isBefore(LocalDate.now()) || order.isExpired())
             return "It is in the past";
         else
-            return order.effectiveExecutionDate.toString();
+            return exDate.toString();
     }
 
     @ResponseBody

@@ -6,28 +6,36 @@ import java.util.*;
 
 public class Order {
 
-    public int id;
-    public boolean repeated;
-    public String descr;
-    public boolean wt;
-    public LocalDate plannedExecutionDate;
-    public LocalDate effectiveExecutionDate;
-    public LocalDate endDate;
-    public double amount;
-    public int timesRepeated = 0;
+    private int id;
+    private final boolean repeated;
+    private final String descr;
+    private final boolean wt;
+    private LocalDate plannedExecutionDate;
+    private LocalDate effectiveExecutionDate;
+    private LocalDate endDate;
+    private final double amount;
+    private int timesRepeated = 0;
 
-    public long f1;
-    public String f2;
-    public String f3;
-    public int rdd;
-    public int rmm;
-    public boolean rlim;
-    public int rinitdd;
-    public int rinitmm;
-    public int rinityy;
-    public int rfindd;
-    public int rfinmm;
-    public int rfinyy;
+    private long f1;
+    private String f2;
+    private String f3;
+    private int rdd;
+    private int rmm;
+    private boolean rlim;
+    private int rinitdd;
+    private int rinitmm;
+    private int rinityy;
+    private int rfindd;
+    private int rfinmm;
+    private int rfinyy;
+
+    public String getDescr() {
+        return descr;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
 
     public Order(HashMap<String, String> map) {
 
@@ -123,10 +131,6 @@ public class Order {
         timesRepeated++;
     }
 
-    public void reschedule() {
-        schedule();
-    }
-
 
     void setExecutionDate() {
         LocalDate dtt = plannedExecutionDate;
@@ -148,6 +152,10 @@ public class Order {
 
     public double getAmount() {
         return amount;
+    }
+
+    public boolean isRepeated() {
+        return repeated;
     }
 
     public boolean isExpired() {

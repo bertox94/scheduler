@@ -1,5 +1,7 @@
 package processor;
 
+import org.springframework.cglib.core.Local;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,11 +13,12 @@ public class Scheduler {
         List<Transaction> records = new ArrayList<>();
         LocalDate today = LocalDate.now();
 
-        for (int i = 0; i < orders.size() && !orders.get(i).repeated; i++) {
+        for (int i = 0; i < orders.size() && !orders.get(i).isRepeated(); i++) {
             Order order = orders.get(i);
             order.schedule();
-            if (!order.effectiveExecutionDate.isAfter(endDate) && !order.effectiveExecutionDate.isBefore(today))
-                records.add(new Transaction(order.descr, order.plannedExecutionDate, order.effectiveExecutionDate, order.amount));
+            LocalDate exDate=order.getEffectiveExecutionDate();
+            if (!exDate.isAfter(endDate) && !exDate.isBefore(today))
+                records.add(new Transaction(order.getDescr(), order.getPlannedExecutionDate(), order.getEffectiveExecutionDate(), order.getAmount()));
             orders.remove(i);
         }
 
@@ -23,12 +26,13 @@ public class Scheduler {
         for (int i = 0; i < orders.size(); ) {
             Order order = orders.get(i);
             order.schedule();
-            while (!order.effectiveExecutionDate.isAfter(endDate) &&
+            LocalDate exDate=order.getEffectiveExecutionDate();
+            while (!exDate.isAfter(endDate) &&
                     //!order.effectiveExecutionDate.isBefore(today) &&
                     !order.isExpired()) {
-                Transaction transaction = new Transaction(order.descr, order.plannedExecutionDate, order.effectiveExecutionDate, order.amount);
+                Transaction transaction = new Transaction(order.getDescr(), order.getPlannedExecutionDate(), order.getEffectiveExecutionDate(), order.getAmount());
                 records.add(transaction);
-                order.reschedule();
+                order.schedule();
             }
             orders.remove(i);
         }
