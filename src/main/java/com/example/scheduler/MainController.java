@@ -59,7 +59,7 @@ public class MainController {
     @PostMapping(path = "/preview")
     public String preview(@RequestParam String data) throws JsonProcessingException {
 
-        LocalDate endDate = LocalDate.parse(data.substring(0, data.indexOf('\n')), DateTimeFormatter.ofPattern("yyyy-MM-dd"));//LocalDate.of(Integer.parseInt(mao.get("year")),Integer.parseInt(mao.get("month")),Integer.parseInt(mao.get("day")));
+        LocalDate endDate = LocalDate.parse(data.substring(0, data.indexOf('\n')), DateTimeFormatter.ofPattern("y-M-d"));//LocalDate.of(Integer.parseInt(mao.get("year")),Integer.parseInt(mao.get("month")),Integer.parseInt(mao.get("day")));
         double balance = Double.parseDouble(data.substring(data.indexOf('\n') + 1));
 
         List<Order> orderList = new ArrayList<>();

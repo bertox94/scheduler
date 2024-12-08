@@ -13,30 +13,21 @@ public class Scheduler {
         List<Transaction> records = new ArrayList<>();
         LocalDate today = LocalDate.now();
 
-        for (int i = 0; i < orders.size() && !orders.get(i).isRepeated(); i++) {
-            Order order = orders.get(i);
+        for (Order order : orders) {
             order.schedule();
-            LocalDate exDate=order.getEffectiveExecutionDate();
-            if (!exDate.isAfter(endDate) && !exDate.isBefore(today))
-                records.add(new Transaction(order.getDescr(), order.getPlannedExecutionDate(), order.getEffectiveExecutionDate(), order.getAmount()));
-            orders.remove(i);
-        }
-
-
-        for (int i = 0; i < orders.size(); ) {
-            Order order = orders.get(i);
-            order.schedule();
-            LocalDate exDate=order.getEffectiveExecutionDate();
-            while (!exDate.isAfter(endDate) &&
-                    //!order.effectiveExecutionDate.isBefore(today) &&
-                    !order.isExpired()) {
-                Transaction transaction = new Transaction(order.getDescr(), order.getPlannedExecutionDate(), order.getEffectiveExecutionDate(), order.getAmount());
-                records.add(transaction);
-                order.schedule();
+            if (order.isRepeated()) {
+                while (!order.getEffectiveExecutionDate().isAfter(endDate) &&
+                        !order.isExpired()) {
+                    if (!order.getEffectiveExecutionDate().isBefore(today))
+                        records.add(new Transaction(order.getDescr(), order.getPlannedExecutionDate(), order.getEffectiveExecutionDate(), order.getAmount()));
+                    order.schedule();
+                }
+            } else {
+                if (!order.getEffectiveExecutionDate().isAfter(endDate) &&
+                        !order.getEffectiveExecutionDate().isBefore(today))
+                    records.add(new Transaction(order.getDescr(), order.getPlannedExecutionDate(), order.getEffectiveExecutionDate(), order.getAmount()));
             }
-            orders.remove(i);
         }
-
         return records;
     }
 }
