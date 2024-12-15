@@ -29,6 +29,10 @@ public class SchedulerApplication {
         String username = "sa";
         String password = "1234";
 
+        jdbcURL = "jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
+        username = "avnadmin";
+        password = "";
+
         connection = DriverManager.getConnection(jdbcURL, username, password);
 
         System.out.println("Connected to H2 embedded database.");

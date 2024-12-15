@@ -207,7 +207,9 @@ public class MainController {
 
     @ResponseBody
     @PostMapping(path = "/addnew")
-    public String addnew(@RequestParam String data) {
+    public String addnew(@RequestParam String data) throws JsonProcessingException {
+
+        Order order = mapper.readValue(data,Order.class);
         try {
             String _SUB_Q_ID = " (  SELECT ROW_NUMBER " +
                     "               FROM (" +

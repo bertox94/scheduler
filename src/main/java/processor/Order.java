@@ -7,13 +7,13 @@ import java.util.*;
 public class Order {
 
     private int id;
-    private final boolean repeated;
-    private final String descr;
-    private final boolean wt;
+    private boolean repeated;
+    private String descr;
+    private boolean wt;
     private LocalDate plannedExecutionDate;
     private LocalDate effectiveExecutionDate;
     private LocalDate endDate;
-    private final double amount;
+    private double amount;
     private int timesRepeated = 0;
 
     private long f1;
@@ -28,6 +28,9 @@ public class Order {
     private int rfindd;
     private int rfinmm;
     private int rfinyy;
+    private int year;
+    private int month;
+    private int day;
 
     public String getDescr() {
         return descr;
@@ -35,6 +38,9 @@ public class Order {
 
     public LocalDate getEndDate() {
         return endDate;
+    }
+
+    public Order() {
     }
 
     public Order(HashMap<String, String> map) {
@@ -66,8 +72,104 @@ public class Order {
                 if (!Objects.equals(map.get("rfinyy"), "$"))
                     rfinyy = Integer.parseInt(map.get("rfinyy"));
             }
-        } else
-            plannedExecutionDate = LocalDate.of(Integer.parseInt(map.get("year")), Integer.parseInt(map.get("month")), Integer.parseInt(map.get("day")));
+        }
+    }
+
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setPlannedExecutionDate(LocalDate plannedExecutionDate) {
+        this.plannedExecutionDate = plannedExecutionDate;
+    }
+
+    public void setEffectiveExecutionDate(LocalDate effectiveExecutionDate) {
+        this.effectiveExecutionDate = effectiveExecutionDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public void setTimesRepeated(int timesRepeated) {
+        this.timesRepeated = timesRepeated;
+    }
+
+    public void setF1(long f1) {
+        this.f1 = f1;
+    }
+
+    public void setF2(String f2) {
+        this.f2 = f2;
+    }
+
+    public void setF3(String f3) {
+        this.f3 = f3;
+    }
+
+    public void setRdd(int rdd) {
+        this.rdd = rdd;
+    }
+
+    public void setRmm(int rmm) {
+        this.rmm = rmm;
+    }
+
+    public void setRlim(boolean rlim) {
+        this.rlim = rlim;
+    }
+
+    public void setRinitdd(int rinitdd) {
+        this.rinitdd = rinitdd;
+    }
+
+    public void setRinitmm(int rinitmm) {
+        this.rinitmm = rinitmm;
+    }
+
+    public void setRinityy(int rinityy) {
+        this.rinityy = rinityy;
+    }
+
+    public void setRfindd(int rfindd) {
+        this.rfindd = rfindd;
+    }
+
+    public void setRfinmm(int rfinmm) {
+        this.rfinmm = rfinmm;
+    }
+
+    public void setRfinyy(int rfinyy) {
+        this.rfinyy = rfinyy;
+    }
+
+    public void setRepeated(boolean repeated) {
+        this.repeated = repeated;
+    }
+
+    public void setDescr(String descr) {
+        this.descr = descr;
+    }
+
+    public void setWt(boolean wt) {
+        this.wt = wt;
+    }
+
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
+
+    public void setYear(int year) {
+        this.year = year;
+    }
+
+    public void setMonth(int month) {
+        this.month = month;
+    }
+
+    public void setDay(int day) {
+        this.day = day;
     }
 
     public void schedule() {
@@ -126,7 +228,8 @@ public class Order {
                     endDate = enddt;
                 }
             }
-        }
+        } else
+            LocalDate.of(year, month, day);
         setExecutionDate();
         timesRepeated++;
     }
@@ -161,4 +264,5 @@ public class Order {
     public boolean isExpired() {
         return rlim && effectiveExecutionDate.isAfter(endDate);
     }
+
 }
