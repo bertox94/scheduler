@@ -4,10 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import processor.Order;
-import processor.Scheduler;
-import processor.Transaction;
+import processor.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -17,47 +18,84 @@ import java.util.*;
 public class MainController {
 
     static Connection connection;
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    public List<Order> allOrders() throws SQLException {
+        List<Order> orders = new ArrayList<>();
+
+        Statement stmt = connection.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT * FROM SingleOrder ");
+
+        while (rs.next()) {
+            SingleOrder order = new SingleOrder();
+            order.setDescr(rs.getString("descr"));
+            order.setWt(rs.getBoolean("wt"));
+            order.setAmount(rs.getDouble("amount"));
+            order.setYear(Integer.parseInt(rs.getString("year")));
+            order.setMonth(Integer.parseInt(rs.getString("month")));
+            order.setDay(Integer.parseInt(rs.getString("day")));
+            orders.add(order);
+        }
+
+        return orders;
+    }
 
     @ResponseBody
     @PostMapping(path = "/orders")
-    public String orders() {
-        StringBuilder data = new StringBuilder();
-        try {
-            Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT encoded FROM public.orders " +
-                    " order by substring(encoded from (locate('\"descr\":', encoded))) asc ;");
-
-            while (rs.next()) {
-                data.append(rs.getString(1)).append("\n");
-            }
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+    public String orders() throws SQLException, JsonProcessingException {
+        List<Order> orders = allOrders();
+        for (Order order : orders) {
+            order.schedule();
         }
-        return data.toString();
+        return mapper.writeValueAsString(orders);
+    }
+
+    public SingleOrder createSingleOrder(int id) throws SQLException {
+        Statement stmt = connection.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT * FROM SingleOrder WHERE id = " + id);
+        return createSingleOrder(rs);
+    }
+
+    private static SingleOrder createSingleOrder(ResultSet rs) throws SQLException {
+        if (rs.next()) {
+            SingleOrder order = new SingleOrder();
+            order.setDescr(rs.getString("descr"));
+            order.setWt(rs.getBoolean("wt"));
+            order.setAmount(rs.getDouble("amount"));
+            order.setYear(Integer.parseInt(rs.getString("year")));
+            order.setMonth(Integer.parseInt(rs.getString("month")));
+            order.setDay(Integer.parseInt(rs.getString("day")));
+            return order;
+        }
+        return null;
     }
 
     @ResponseBody
     @PostMapping(path = "/schedule")
-    public String schedule(@RequestParam String data) throws JsonProcessingException {
+    public String schedule(@RequestParam String data) throws JsonProcessingException, SQLException {
 
-        Map<String, String> mao = mapper.readValue(data, Map.class);
-        Order order = new Order(new HashMap<>(mao));
+        Order order = createSingleOrder(Integer.parseInt(data));
+        order.schedule();
+        if (order.getEffectiveExecutionDate().isBefore(LocalDate.now()))
+            return "It is in the past";
+        return order.getEffectiveExecutionDate().toString();
 
+/*
+        RepeatedOrder order = mapper.readValue(data, RepeatedOrder.class);
         do order.schedule();
         while (order.isExpired() || order.getEffectiveExecutionDate().isBefore(LocalDate.now()));
-
-        LocalDate exDate = order.getEffectiveExecutionDate();
-        if (exDate.isBefore(LocalDate.now()) || order.isExpired())
+        if (order.getEffectiveExecutionDate().isBefore(LocalDate.now()))
             return "It is in the past";
-        else
-            return exDate.toString();
+        if (order.isExpired())
+            return "It is expired";
+        return order.getEffectiveExecutionDate().toString();
+*/
+
     }
 
     @ResponseBody
     @PostMapping(path = "/preview")
-    public String preview(@RequestParam String data) throws JsonProcessingException {
+    public String preview(@RequestParam String data) throws JsonProcessingException, SQLException {
 
         LocalDate endDate = LocalDate.parse(data.substring(0, data.indexOf('\n')), DateTimeFormatter.ofPattern("y-M-d"));//LocalDate.of(Integer.parseInt(mao.get("year")),Integer.parseInt(mao.get("month")),Integer.parseInt(mao.get("day")));
         double balance = Double.parseDouble(data.substring(data.indexOf('\n') + 1));
@@ -68,7 +106,7 @@ public class MainController {
 
         for (String line : orders) {
             if (!line.isEmpty())
-                orderList.add(new Order(new HashMap<String, String>(mapper.readValue(line, Map.class))));
+                orderList.add(new Order()); //mapper.readValue(line, Map.class)))
         }
 
         List<Transaction> records = Scheduler.preview(orderList, endDate);
@@ -206,28 +244,53 @@ public class MainController {
     }
 
     @ResponseBody
-    @PostMapping(path = "/addnew")
-    public String addnew(@RequestParam String data) throws JsonProcessingException {
+    @PostMapping(path = "/addnewsingle")
+    public String addnewsingle(@RequestParam String data) throws IOException, SQLException {
 
-        Order order = mapper.readValue(data,Order.class);
+        SingleOrder order = mapper.readValue(data, SingleOrder.class);
+
+        Statement stmt = connection.createStatement();
+        String s = String.format("""
+                        INSERT INTO singleOrder
+                        VALUES((%s), '%s', %s, %s, %s, %s, %s)
+                        """,
+                Files.readString(Paths.get(".\\queries\\getFirstId.sql")),
+                order.getDescr(),
+                order.isWt(),
+                order.getAmount(),
+                order.getYear(),
+                order.getMonth(),
+                order.getDay());
+        stmt.executeUpdate(s);
+        return "OK";
+    }
+
+
+    @ResponseBody
+    @PostMapping(path = "/addnewrepeated")
+    public String addnewrepeated(@RequestParam String data) throws IOException {
+
+        Order order = mapper.readValue(data, RepeatedOrder.class);
         try {
+
+            String sqlQuery = Files.readString(Paths.get(".\\getFirstId.sql"));
             String _SUB_Q_ID = " (  SELECT ROW_NUMBER " +
-                    "               FROM (" +
-                    "                  SELECT ROW_NUMBER() OVER (ORDER BY id) as ROW_NUMBER, id " +
-                    "                  FROM ( " +
-                    "                      SELECT id    " +
-                    "                      FROM orders " +
-                    "                      UNION ALL  " +
-                    "                      SELECT COALESCE(MAX(id),2) AS id   " +
-                    "                      FROM orders         " +
-                    "                  ) AS sub1 " +
-                    "               ) AS sub2       " +
-                    "               WHERE ROW_NUMBER != id      " +
-                    "               LIMIT 1) ";
+                               "               FROM (" +
+                               "                  SELECT ROW_NUMBER() OVER (ORDER BY id) as ROW_NUMBER, id " +
+                               "                  FROM ( " +
+                               "                      SELECT id    " +
+                               "                      FROM () " +
+                               "                      UNION ALL  " +
+                               "                      SELECT COALESCE(MAX(id),2) AS id   " +
+                               "                      FROM orders         " +
+                               "                  ) AS sub1 " +
+                               "               ) AS sub2       " +
+                               "               WHERE ROW_NUMBER != id      " +
+                               "               LIMIT 1) ";
             Statement stmt = connection.createStatement();
             stmt.executeUpdate(
                     "INSERT INTO public.orders (id, encoded) " +
-                            "VALUES(" + _SUB_Q_ID + ", '{\"id\":'|| '\"' || " + _SUB_Q_ID + "|| '\"," + data.substring(1) + "');");
+                    "VALUES(" + _SUB_Q_ID + ", '{\"id\":'|| '\"' || " + _SUB_Q_ID + "|| '\"," + data.substring(1) + "');");
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             return "KO";
@@ -244,8 +307,8 @@ public class MainController {
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery(
                     "SELECT encoded " +
-                            " FROM public.orders " +
-                            " WHERE id = " + _id + ";");
+                    " FROM public.orders " +
+                    " WHERE id = " + _id + ";");
 
             if (rs.next())
                 resp = rs.getString(1);
@@ -277,25 +340,25 @@ public class MainController {
             Statement stmt = connection.createStatement();
 
             String _SUB_Q_ID = " (  SELECT ROW_NUMBER " +
-                    "               FROM (" +
-                    "                  SELECT ROW_NUMBER() OVER (ORDER BY id) AS ROW_NUMBER, id " +
-                    "                  FROM ( " +
-                    "                      SELECT id    " +
-                    "                      FROM orders " +
-                    "                      UNION ALL  " +
-                    "                      SELECT COALESCE(MAX(id),2) AS id   " +
-                    "                      FROM orders         " +
-                    "                  ) AS sub1 " +
-                    "               ) AS sub2       " +
-                    "               WHERE ROW_NUMBER != id      " +
-                    "               LIMIT 1) ";
+                               "               FROM (" +
+                               "                  SELECT ROW_NUMBER() OVER (ORDER BY id) AS ROW_NUMBER, id " +
+                               "                  FROM ( " +
+                               "                      SELECT id    " +
+                               "                      FROM orders " +
+                               "                      UNION ALL  " +
+                               "                      SELECT COALESCE(MAX(id),2) AS id   " +
+                               "                      FROM orders         " +
+                               "                  ) AS sub1 " +
+                               "               ) AS sub2       " +
+                               "               WHERE ROW_NUMBER != id      " +
+                               "               LIMIT 1) ";
 
             stmt.executeUpdate(" INSERT INTO orders (id, encoded)" +
-                    "SELECT" + _SUB_Q_ID + """
-                    , REGEXP_REPLACE(encoded, '"id":"[0-9]*"', '"id":"' || """ + _SUB_Q_ID + """
-                    || '"' )
-                    FROM orders
-                    WHERE id = """ + data + ";");
+                               "SELECT" + _SUB_Q_ID + """
+                                       , REGEXP_REPLACE(encoded, '"id":"[0-9]*"', '"id":"' || """ + _SUB_Q_ID + """
+                                       || '"' )
+                                       FROM orders
+                                       WHERE id = """ + data + ";");
 
         } catch (SQLException throwables) {
             throwables.printStackTrace();

@@ -12,7 +12,7 @@ public class Scheduler {
     public static List<Transaction> preview(List<Order> orders, LocalDate endDate) {
         List<Transaction> records = new ArrayList<>();
         LocalDate today = LocalDate.now();
-
+/*
         for (Order order : orders) {
             order.schedule();
             if (order.isRepeated()) {
@@ -27,7 +27,7 @@ public class Scheduler {
                         !order.getEffectiveExecutionDate().isBefore(today))
                     records.add(new Transaction(order.getDescr(), order.getPlannedExecutionDate(), order.getEffectiveExecutionDate(), order.getAmount()));
             }
-        }
+        }*/
         return records;
     }
 }

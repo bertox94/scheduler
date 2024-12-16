@@ -773,7 +773,7 @@
             el.find("tr").each(function () {
                 let ell = $(this).children();
                 if (ell.length > 1) {
-                    $.post("/schedule", {data: lines[i]}, function (returnedData) {
+                    $.post("/schedule", {data: JSON.parse(lines[i]).id}, function (returnedData) {
                         ell[1].removeChild(ell[1].firstChild)
                         ell[1].append(returnedData)
                     })
@@ -1363,9 +1363,9 @@
 
         el.find("[name = amount]").val(parseFloat(el.find("[name = amount]").val()).toFixed(2));
 
-        $.post("/addnew", {
+        $.post("/addnewsingle", {
             data: JSON.stringify({
-                repeated: "false",
+                //repeated: "false",
                 descr: el.find("[name = descr]").val(),
                 wt: el.find("[name = wt] :selected").val(),
                 day: el.find("[name = day] :selected").val(),
@@ -1446,7 +1446,7 @@
         let amount = $("#ram").val();
         $("#ram").val(parseFloat(amount).toFixed(2));
 
-        $.post("/addnew", {
+        $.post("/addnewrepeated", {
             data: JSON.stringify({
                 repeated: "true",
                 descr: $("#rdescr").val(),
