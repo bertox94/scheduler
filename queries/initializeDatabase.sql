@@ -29,7 +29,7 @@ create table if not exists repeatedorder
     rfinyy  integer
 );
 
-create table transaction
+create table if not exists transaction
 (
     id            integer generated always as identity
             primary key,

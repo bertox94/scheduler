@@ -14,11 +14,13 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+;
+
 @Controller
 public class MainController {
 
     static Connection connection;
-    private final ObjectMapper mapper = new ObjectMapper();
+    static final ObjectMapper mapper = new ObjectMapper();
 
     public List<Order> allOrders() throws SQLException {
         List<Order> orders = new ArrayList<>();
@@ -95,10 +97,28 @@ public class MainController {
 
     @ResponseBody
     @PostMapping(path = "/preview")
-    public String preview(@RequestParam String data) throws JsonProcessingException, SQLException {
+    public String preview(@RequestParam String data) throws IOException, SQLException {
 
-        LocalDate endDate = LocalDate.parse(data.substring(0, data.indexOf('\n')), DateTimeFormatter.ofPattern("y-M-d"));//LocalDate.of(Integer.parseInt(mao.get("year")),Integer.parseInt(mao.get("month")),Integer.parseInt(mao.get("day")));
-        double balance = Double.parseDouble(data.substring(data.indexOf('\n') + 1));
+        LocalDate endDate = LocalDate.parse(data, DateTimeFormatter.ofPattern("y-M-d"));//LocalDate.of(Integer.parseInt(mao.get("year")),Integer.parseInt(mao.get("month")),Integer.parseInt(mao.get("day")));
+        //double balance = Double.parseDouble(data.substring(data.indexOf('\n') + 1));
+
+        String sqlQuery = Files.readString(Paths.get(".\\queries\\getSummary.sql"));
+        Statement stmt = connection.createStatement();
+        ResultSet rs = stmt.executeQuery(sqlQuery);
+        List<Transaction> summary = new ArrayList<>();
+
+        while (rs.next()) {
+            summary.add(new Transaction(rs.getLong("orderid"),
+                    rs.getString("descr"),
+                    rs.getDate("date").toLocalDate(),
+                    rs.getDouble("amount")));
+        }
+
+        Map<String,List<Transaction>> map = new HashMap<>();
+        map.put("summary",summary);
+        return mapper.writeValueAsString(map);
+
+        /*
 
         List<Order> orderList = new ArrayList<>();
 
@@ -202,6 +222,8 @@ public class MainController {
         resp.add("\"arr6\":" + sj);
 
         return resp.toString();
+
+         */
     }
 
     private static Result linRegression(List<Double> allDatesBalance) {

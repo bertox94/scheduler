@@ -3,19 +3,16 @@ package processor;
 import java.time.LocalDate;
 
 public class Transaction {
+    public long orderid;
     public String descr;
-    public LocalDate plannedExecutionDate;
-    public LocalDate effectiveExecutionDate;
+    public LocalDate executionDate;
     public double amount;
 
-    public Transaction(String descr, LocalDate plannedExecutionDate, LocalDate effectiveExecutionDate, double amount) {
+    public Transaction(long orderid, String descr, LocalDate executionDate, double amount) {
+        this.orderid = orderid;
         this.descr = descr;
-        this.plannedExecutionDate = plannedExecutionDate;
-        this.effectiveExecutionDate = effectiveExecutionDate;
+        this.executionDate = executionDate;
         this.amount = amount;
     }
 
-    public LocalDate getEffectiveExecutionDate() {
-        return effectiveExecutionDate;
-    }
 }
