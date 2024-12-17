@@ -33,8 +33,8 @@ public class SchedulerApplication {
         String username = "sa";
         String password = "1234";
 
-        jdbcURL = "jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
-        username = "avnadmin";
+        jdbcURL = "jdbc:postgresql://localhost:5432/postgres?ssl=require";//"jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
+        username = "postgres";
         password = "";
 
         connection = DriverManager.getConnection(jdbcURL, username, password);

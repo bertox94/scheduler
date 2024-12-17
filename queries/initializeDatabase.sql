@@ -29,13 +29,12 @@ create table if not exists repeatedorder
     rfinyy  integer
 );
 
-create table if not exists transaction
+create table transaction
 (
-    id            integer not null
-        constraint orders_pk
+    id            integer generated always as identity
             primary key,
     orderid       integer,
     descr         text,
     executiondate date,
-    amount        numeric(10,2)
+    amount        numeric(10, 2)
 );

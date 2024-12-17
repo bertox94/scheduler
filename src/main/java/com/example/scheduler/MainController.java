@@ -270,27 +270,31 @@ public class MainController {
     @PostMapping(path = "/addnewrepeated")
     public String addnewrepeated(@RequestParam String data) throws IOException {
 
-        Order order = mapper.readValue(data, RepeatedOrder.class);
+        RepeatedOrder o = mapper.readValue(data, RepeatedOrder.class);
         try {
 
-            String sqlQuery = Files.readString(Paths.get(".\\getFirstId.sql"));
-            String _SUB_Q_ID = " (  SELECT ROW_NUMBER " +
-                               "               FROM (" +
-                               "                  SELECT ROW_NUMBER() OVER (ORDER BY id) as ROW_NUMBER, id " +
-                               "                  FROM ( " +
-                               "                      SELECT id    " +
-                               "                      FROM () " +
-                               "                      UNION ALL  " +
-                               "                      SELECT COALESCE(MAX(id),2) AS id   " +
-                               "                      FROM orders         " +
-                               "                  ) AS sub1 " +
-                               "               ) AS sub2       " +
-                               "               WHERE ROW_NUMBER != id      " +
-                               "               LIMIT 1) ";
+            String sqlQuery = Files.readString(Paths.get(".\\queries\\getFirstId.sql"));
             Statement stmt = connection.createStatement();
+            StringJoiner sj = new StringJoiner(",", "", ");");
+            sj.add('\'' + o.getDescr() + '\'')
+                    .add(String.valueOf(o.isWt()))
+                    .add(String.valueOf(o.getAmount()))
+                    .add(String.valueOf(o.getF1()))
+                    .add('\'' + o.getF2() + '\'')
+                    .add('\'' + o.getF3() + '\'')
+                    .add(String.valueOf(o.getRdd()))
+                    .add(String.valueOf(o.getRmm()))
+                    .add(String.valueOf(o.isRlim()))
+                    .add(String.valueOf(o.getRinitdd()))
+                    .add(String.valueOf(o.getRinitmm()))
+                    .add(String.valueOf(o.getRinityy()))
+                    .add(String.valueOf(o.getRfindd()))
+                    .add(String.valueOf(o.getRfinmm()))
+                    .add(String.valueOf(o.getRfinyy()));
             stmt.executeUpdate(
-                    "INSERT INTO public.orders (id, encoded) " +
-                    "VALUES(" + _SUB_Q_ID + ", '{\"id\":'|| '\"' || " + _SUB_Q_ID + "|| '\"," + data.substring(1) + "');");
+                    "INSERT INTO public.repeatedorder " +
+                            "VALUES((" + sqlQuery + "), " +
+                            sj);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             return "KO";
@@ -307,8 +311,8 @@ public class MainController {
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery(
                     "SELECT encoded " +
-                    " FROM public.orders " +
-                    " WHERE id = " + _id + ";");
+                            " FROM public.orders " +
+                            " WHERE id = " + _id + ";");
 
             if (rs.next())
                 resp = rs.getString(1);
@@ -340,25 +344,25 @@ public class MainController {
             Statement stmt = connection.createStatement();
 
             String _SUB_Q_ID = " (  SELECT ROW_NUMBER " +
-                               "               FROM (" +
-                               "                  SELECT ROW_NUMBER() OVER (ORDER BY id) AS ROW_NUMBER, id " +
-                               "                  FROM ( " +
-                               "                      SELECT id    " +
-                               "                      FROM orders " +
-                               "                      UNION ALL  " +
-                               "                      SELECT COALESCE(MAX(id),2) AS id   " +
-                               "                      FROM orders         " +
-                               "                  ) AS sub1 " +
-                               "               ) AS sub2       " +
-                               "               WHERE ROW_NUMBER != id      " +
-                               "               LIMIT 1) ";
+                    "               FROM (" +
+                    "                  SELECT ROW_NUMBER() OVER (ORDER BY id) AS ROW_NUMBER, id " +
+                    "                  FROM ( " +
+                    "                      SELECT id    " +
+                    "                      FROM orders " +
+                    "                      UNION ALL  " +
+                    "                      SELECT COALESCE(MAX(id),2) AS id   " +
+                    "                      FROM orders         " +
+                    "                  ) AS sub1 " +
+                    "               ) AS sub2       " +
+                    "               WHERE ROW_NUMBER != id      " +
+                    "               LIMIT 1) ";
 
             stmt.executeUpdate(" INSERT INTO orders (id, encoded)" +
-                               "SELECT" + _SUB_Q_ID + """
-                                       , REGEXP_REPLACE(encoded, '"id":"[0-9]*"', '"id":"' || """ + _SUB_Q_ID + """
-                                       || '"' )
-                                       FROM orders
-                                       WHERE id = """ + data + ";");
+                    "SELECT" + _SUB_Q_ID + """
+                    , REGEXP_REPLACE(encoded, '"id":"[0-9]*"', '"id":"' || """ + _SUB_Q_ID + """
+                    || '"' )
+                    FROM orders
+                    WHERE id = """ + data + ";");
 
         } catch (SQLException throwables) {
             throwables.printStackTrace();

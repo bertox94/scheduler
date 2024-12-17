@@ -36,6 +36,9 @@ public class RepeatedOrder extends Order {
         return endDate;
     }
 
+    public RepeatedOrder() {
+    }
+
     public RepeatedOrder(HashMap<String, String> map) {
 
         //repeated = Boolean.parseBoolean(map.get("repeated"));
@@ -89,8 +92,8 @@ public class RepeatedOrder extends Order {
         this.timesRepeated = timesRepeated;
     }
 
-    public void setF1(long f1) {
-        this.f1 = f1;
+    public void setF1(String f1) {
+        this.f1 = Integer.parseInt(f1);
     }
 
     public void setF2(String f2) {
@@ -101,44 +104,48 @@ public class RepeatedOrder extends Order {
         this.f3 = f3;
     }
 
-    public void setRdd(int rdd) {
-        this.rdd = rdd;
+    public void setRdd(String rdd) {
+        if (!rdd.equals("$"))
+            this.rdd = Integer.parseInt(rdd);
     }
 
-    public void setRmm(int rmm) {
-        this.rmm = rmm;
+    public void setRmm(String rmm) {
+        if (!rmm.equals("$"))
+            this.rmm = Integer.parseInt(rmm);
     }
 
-    public void setRlim(boolean rlim) {
-        this.rlim = rlim;
+    public void setRlim(String rlim) {
+        this.rlim = rlim.equals("limited");
     }
 
-    public void setRinitdd(int rinitdd) {
-        this.rinitdd = rinitdd;
+    public void setRinitdd(String rinitdd) {
+        if (!rinitdd.equals("$"))
+            this.rinitdd = Integer.parseInt(rinitdd);
     }
 
-    public void setRinitmm(int rinitmm) {
-        this.rinitmm = rinitmm;
+    public void setRinitmm(String rinitmm) {
+        if (!rinitmm.equals("$"))
+            this.rinitmm = Integer.parseInt(rinitmm);
     }
 
-    public void setRinityy(int rinityy) {
-        this.rinityy = rinityy;
+    public void setRinityy(String rinityy) {
+        if (!rinityy.equals("$"))
+            this.rinityy = Integer.parseInt(rinityy);
     }
 
-    public void setRfindd(int rfindd) {
-        this.rfindd = rfindd;
+    public void setRfindd(String rfindd) {
+        if (!rfindd.equals("$"))
+            this.rfindd = Integer.parseInt(rfindd);
     }
 
-    public void setRfinmm(int rfinmm) {
-        this.rfinmm = rfinmm;
+    public void setRfinmm(String rfinmm) {
+        if (!rfinmm.equals("$"))
+            this.rfinmm = Integer.parseInt(rfinmm);
     }
 
-    public void setRfinyy(int rfinyy) {
-        this.rfinyy = rfinyy;
-    }
-
-    public void setRepeated(boolean repeated) {
-        //this.repeated = repeated;
+    public void setRfinyy(String rfinyy) {
+        if (!rfinyy.equals("$"))
+            this.rfinyy = Integer.parseInt(rfinyy);
     }
 
     public void setDescr(String descr) {
@@ -163,6 +170,70 @@ public class RepeatedOrder extends Order {
 
     public void setDay(int day) {
         this.day = day;
+    }
+
+    public int getTimesRepeated() {
+        return timesRepeated;
+    }
+
+    public long getF1() {
+        return f1;
+    }
+
+    public String getF2() {
+        return f2;
+    }
+
+    public String getF3() {
+        return f3;
+    }
+
+    public int getRdd() {
+        return rdd;
+    }
+
+    public int getRmm() {
+        return rmm;
+    }
+
+    public boolean isRlim() {
+        return rlim;
+    }
+
+    public int getRinitdd() {
+        return rinitdd;
+    }
+
+    public int getRinitmm() {
+        return rinitmm;
+    }
+
+    public int getRinityy() {
+        return rinityy;
+    }
+
+    public int getRfindd() {
+        return rfindd;
+    }
+
+    public int getRfinmm() {
+        return rfinmm;
+    }
+
+    public int getRfinyy() {
+        return rfinyy;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public int getMonth() {
+        return month;
+    }
+
+    public int getDay() {
+        return day;
     }
 
     public void schedule() {
@@ -225,8 +296,6 @@ public class RepeatedOrder extends Order {
         setExecutionDate();
         timesRepeated++;
     }
-
-
 
 
     public LocalDate getPlannedExecutionDate() {
