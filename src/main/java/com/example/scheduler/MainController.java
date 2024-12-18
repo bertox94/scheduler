@@ -150,7 +150,8 @@ public class MainController {
         Map<String, String> order = mapper.readValue(data, Map.class);
 
         PreparedStatement stmt = connection
-                .prepareStatement("INSERT INTO public.repeatedOrder VALUES ((SELECT public.getFirstId()),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+                .prepareStatement("INSERT INTO public.repeatedOrder VALUES (" +
+                                  "(SELECT public.getFirstId()),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
         stmt.setString(1, order.get("descr"));
         stmt.setBoolean(2, order.get("wt").equalsIgnoreCase("true"));
         stmt.setString(3, order.get("amount"));
