@@ -1,4 +1,4 @@
-package processor;
+package com.example.scheduler;
 
 import java.sql.Date;
 

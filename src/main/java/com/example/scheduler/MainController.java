@@ -1,11 +1,9 @@
 package com.example.scheduler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import processor.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,7 +21,6 @@ public class MainController {
     static Connection connection;
     static final ObjectMapper mapper = new ObjectMapper();
     static AtomicInteger id_user = new AtomicInteger(0);
-    static String getSummary;
 
     static void initialize() throws IOException, SQLException {
         String jdbcURL = "jdbc:postgresql://localhost:5432/postgres?ssl=require";
@@ -37,7 +34,6 @@ public class MainController {
         String sql = Files.readString(Paths.get(".\\queries\\initializeDatabase.sql"));
         Statement statement = connection.createStatement();
         statement.execute(sql);
-        getSummary = Files.readString(Paths.get(".\\queries\\getSummary.sql"));
     }
 
     @ResponseBody
@@ -48,12 +44,14 @@ public class MainController {
         endDate = endDate.getDayOfMonth() > endDate.lengthOfMonth() ? endDate.withDayOfMonth(endDate.lengthOfMonth()) : endDate;
         long iduser = System.currentTimeMillis() * 10 + id_user.incrementAndGet();
         PreparedStatement stmt = connection.prepareStatement("SELECT public.generateOrderOccurrences(?,?);");
-        stmt.setLong(1, endDate.toEpochDay());
+        stmt.setLong(1, endDate.toEpochDay() * 86400);
         stmt.setLong(2, iduser);
 
         stmt.executeQuery();
 
-        ResultSet rs = connection.createStatement().executeQuery(getSummary);
+        ResultSet rs = connection.createStatement().executeQuery(Files
+                .readString(Paths.get(".\\queries\\getSummary.sql"))
+                .replace("?", String.valueOf(iduser)));
         List<Transaction> summary = new ArrayList<>();
 
         while (rs.next()) {
