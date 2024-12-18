@@ -2,6 +2,7 @@ package com.example.scheduler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import processor.*;
@@ -10,89 +11,33 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
-;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class MainController {
 
     static Connection connection;
     static final ObjectMapper mapper = new ObjectMapper();
+    static AtomicInteger id_user = new AtomicInteger(0);
+    static String getSummary;
 
-    public List<Order> allOrders() throws SQLException {
-        List<Order> orders = new ArrayList<>();
+    static void initialize() throws IOException, SQLException {
+        String jdbcURL = "jdbc:postgresql://localhost:5432/postgres?ssl=require";
+        jdbcURL = "jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
+        String username = "avnadmin";
+        String password = "";
 
-        Statement stmt = connection.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT * FROM SingleOrder ");
+        connection = DriverManager.getConnection(jdbcURL, username, password);
+        mapper.registerModule(new JavaTimeModule());
 
-        while (rs.next()) {
-            SingleOrder order = new SingleOrder();
-            order.setDescr(rs.getString("descr"));
-            order.setWt(rs.getBoolean("wt"));
-            order.setAmount(rs.getDouble("amount"));
-            order.setYear(Integer.parseInt(rs.getString("year")));
-            order.setMonth(Integer.parseInt(rs.getString("month")));
-            order.setDay(Integer.parseInt(rs.getString("day")));
-            orders.add(order);
-        }
-
-        return orders;
-    }
-
-    @ResponseBody
-    @PostMapping(path = "/orders")
-    public String orders() throws SQLException, JsonProcessingException {
-        List<Order> orders = allOrders();
-        for (Order order : orders) {
-            order.schedule();
-        }
-        return mapper.writeValueAsString(orders);
-    }
-
-    public SingleOrder createSingleOrder(int id) throws SQLException {
-        Statement stmt = connection.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT * FROM SingleOrder WHERE id = " + id);
-        return createSingleOrder(rs);
-    }
-
-    private static SingleOrder createSingleOrder(ResultSet rs) throws SQLException {
-        if (rs.next()) {
-            SingleOrder order = new SingleOrder();
-            order.setDescr(rs.getString("descr"));
-            order.setWt(rs.getBoolean("wt"));
-            order.setAmount(rs.getDouble("amount"));
-            order.setYear(Integer.parseInt(rs.getString("year")));
-            order.setMonth(Integer.parseInt(rs.getString("month")));
-            order.setDay(Integer.parseInt(rs.getString("day")));
-            return order;
-        }
-        return null;
-    }
-
-    @ResponseBody
-    @PostMapping(path = "/schedule")
-    public String schedule(@RequestParam String data) throws JsonProcessingException, SQLException {
-
-        Order order = createSingleOrder(Integer.parseInt(data));
-        order.schedule();
-        if (order.getEffectiveExecutionDate().isBefore(LocalDate.now()))
-            return "It is in the past";
-        return order.getEffectiveExecutionDate().toString();
-
-/*
-        RepeatedOrder order = mapper.readValue(data, RepeatedOrder.class);
-        do order.schedule();
-        while (order.isExpired() || order.getEffectiveExecutionDate().isBefore(LocalDate.now()));
-        if (order.getEffectiveExecutionDate().isBefore(LocalDate.now()))
-            return "It is in the past";
-        if (order.isExpired())
-            return "It is expired";
-        return order.getEffectiveExecutionDate().toString();
-*/
-
+        String sql = Files.readString(Paths.get(".\\queries\\initializeDatabase.sql"));
+        Statement statement = connection.createStatement();
+        statement.execute(sql);
+        getSummary = Files.readString(Paths.get(".\\queries\\getSummary.sql"));
     }
 
     @ResponseBody
@@ -100,17 +45,21 @@ public class MainController {
     public String preview(@RequestParam String data) throws IOException, SQLException {
 
         LocalDate endDate = LocalDate.parse(data, DateTimeFormatter.ofPattern("y-M-d"));
+        endDate = endDate.getDayOfMonth() > endDate.lengthOfMonth() ? endDate.withDayOfMonth(endDate.lengthOfMonth()) : endDate;
+        long iduser = System.currentTimeMillis() * 10 + id_user.incrementAndGet();
+        PreparedStatement stmt = connection.prepareStatement("SELECT public.generateOrderOccurrences(?,?);");
+        stmt.setLong(1, endDate.toEpochDay());
+        stmt.setLong(2, iduser);
 
-        Statement stmt = connection.createStatement();
-        stmt.executeQuery("SELECT public.generate_order_occurrences('" + endDate + "');");
+        stmt.executeQuery();
 
-        ResultSet rs = stmt.executeQuery(Files.readString(Paths.get(".\\queries\\getSummary.sql")));
+        ResultSet rs = connection.createStatement().executeQuery(getSummary);
         List<Transaction> summary = new ArrayList<>();
 
         while (rs.next()) {
             summary.add(new Transaction(rs.getLong("orderid"),
                     rs.getString("descr"),
-                    rs.getDate("date").toString(),
+                    rs.getDate("date"),
                     rs.getDouble("amount")));
         }
 
@@ -118,18 +67,23 @@ public class MainController {
         map.put("summary", summary);
 
 
-        stmt = connection.createStatement();
-        rs = stmt.executeQuery("SELECT * FROM public.TRANSACTION ORDER BY executiondate");
+        rs = connection.createStatement().executeQuery("SELECT * FROM public.TRANSACTION ORDER BY executiondate");
         List<Transaction> computed = new ArrayList<>();
 
         while (rs.next()) {
             computed.add(new Transaction(rs.getLong("orderid"),
                     rs.getString("descr"),
-                    rs.getDate("executionDate").toString(),
+                    rs.getDate("executionDate"),
                     rs.getDouble("amount")));
         }
 
         map.put("computed", computed);
+
+        stmt = connection.prepareStatement("DELETE FROM public.TRANSACTION WHERE iduser = ?;");
+        stmt.setLong(1, iduser);
+        stmt.executeUpdate();
+
+        id_user.decrementAndGet();
         return mapper.writeValueAsString(map);
 
     }
@@ -177,21 +131,16 @@ public class MainController {
     @PostMapping(path = "/addnewsingle")
     public String addnewsingle(@RequestParam String data) throws IOException, SQLException {
 
-        SingleOrder order = mapper.readValue(data, SingleOrder.class);
+        Map<String, String> order = mapper.readValue(data, Map.class);
 
-        Statement stmt = connection.createStatement();
-        String s = "";
+        PreparedStatement stmt = connection
+                .prepareStatement("INSERT INTO public.singleOrder VALUES ((SELECT public.getFirstId()),?,?,?,?);");
+        stmt.setString(1, order.get("descr"));
+        stmt.setString(2, order.get("wt"));
+        stmt.setString(3, order.get("amount"));
+        stmt.setDate(4, Date.valueOf(order.get("date")));
 
-        StringJoiner sj = new StringJoiner(", ", "", ");");
-        sj.add("(" + Files.readString(Paths.get(".\\queries\\getFirstId.sql")) + ")")
-                .add('\'' + order.getDescr() + '\'')
-                .add(String.valueOf(order.isWt()))
-                .add(String.valueOf(order.getAmount()))
-                .add(String.valueOf(order.getYear()))
-                .add(String.valueOf(order.getMonth()))
-                .add(String.valueOf(order.getDay()));
-
-        stmt.executeUpdate("INSERT INTO public.singleOrder VALUES (" + sj);
+        stmt.executeUpdate();
         return "OK";
     }
 
@@ -200,52 +149,36 @@ public class MainController {
     @PostMapping(path = "/addnewrepeated")
     public String addnewrepeated(@RequestParam String data) throws IOException, SQLException {
 
-        RepeatedOrder o = mapper.readValue(data, RepeatedOrder.class);
+        Map<String, String> order = mapper.readValue(data, Map.class);
 
-        Statement stmt = connection.createStatement();
-        StringJoiner sj = new StringJoiner(",", "", ");");
-        sj.add("(" + Files.readString(Paths.get(".\\queries\\getFirstId.sql")) + ")")
-                .add('\'' + o.getDescr() + '\'')
-                .add(String.valueOf(o.isWt()))
-                .add(String.valueOf(o.getAmount()))
-                .add(String.valueOf(o.getF1()))
-                .add('\'' + o.getF2() + '\'')
-                .add('\'' + o.getF3() + '\'')
-                .add(String.valueOf(o.getRdd()))
-                .add(String.valueOf(o.getRmm()))
-                .add(String.valueOf(o.isRlim()))
-                .add(String.valueOf(o.getRinitdd()))
-                .add(String.valueOf(o.getRinitmm()))
-                .add(String.valueOf(o.getRinityy()))
-                .add(String.valueOf(o.getRfindd()))
-                .add(String.valueOf(o.getRfinmm()))
-                .add(String.valueOf(o.getRfinyy()));
+        PreparedStatement stmt = connection
+                .prepareStatement("INSERT INTO public.repeatedOrder VALUES ((SELECT public.getFirstId()),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+        stmt.setString(1, order.get("descr"));
+        stmt.setBoolean(2, order.get("wt").equalsIgnoreCase("true"));
+        stmt.setString(3, order.get("amount"));
+        stmt.setInt(4, Integer.parseInt(order.get("f1")));
+        stmt.setString(5, order.get("f2"));
+        stmt.setString(6, order.get("f3"));
+        stmt.setInt(7, order.get("rdd").equals("$") ? 0 : Integer.parseInt(order.get("rdd")));
+        stmt.setInt(8, order.get("rmm").equals("$") ? 0 : Integer.parseInt(order.get("rmm")));
+        stmt.setBoolean(9, order.get("rlim").equalsIgnoreCase("limited"));
+        stmt.setInt(10, order.get("rinitdd").equals("$") ? 0 : Integer.parseInt(order.get("rinitdd")));
+        stmt.setInt(11, order.get("rinitmm").equals("$") ? 0 : Integer.parseInt(order.get("rinitmm")));
+        stmt.setInt(12, order.get("rinityy").isEmpty() ? 0 : Integer.parseInt(order.get("rinityy")));
+        stmt.setInt(13, order.get("rfindd").equals("$") ? 0 : Integer.parseInt(order.get("rfindd")));
+        stmt.setInt(14, order.get("rfinmm").equals("$") ? 0 : Integer.parseInt(order.get("rfinmm")));
+        stmt.setInt(15, order.get("rfinyy").isEmpty() ? 0 : Integer.parseInt(order.get("rfinyy")));
 
-        stmt.executeUpdate("INSERT INTO public.repeatedOrder VALUES (" + sj);
+        stmt.executeUpdate();
         return "OK";
-    }
-
-    @ResponseBody
-    @PostMapping(path = "/get")
-    public String get(@RequestParam String _id) throws SQLException {
-        String resp = "";
-        Statement stmt = connection.createStatement();
-        ResultSet rs = stmt.executeQuery(
-                "SELECT encoded " +
-                        " FROM public.orders " +
-                        " WHERE id = " + _id + ";");
-
-        if (rs.next())
-            resp = rs.getString(1);
-
-        return resp;
     }
 
     @ResponseBody
     @PostMapping(path = "/delete")
     public String delete(@RequestParam String data) throws SQLException {
         Statement stmt = connection.createStatement();
-        stmt.executeUpdate("DELETE FROM public.orders WHERE id = " + data + ";");
+        stmt.executeUpdate("DELETE FROM public.repeatedOrder WHERE id = " + data + ";");
+        stmt.executeUpdate("DELETE FROM public.singleOrder WHERE id = " + data + ";");
         return "OK";
     }
 
@@ -253,15 +186,44 @@ public class MainController {
     @PostMapping(path = "/duplicate")
     public String duplicate(@RequestParam String data) throws IOException, SQLException {
         Statement stmt = connection.createStatement();
-        stmt.executeUpdate("""
-                WITH     duplicated_record AS (
-                                        SELECT name, email, position, salary
-                                        FROM employees
-                                        WHERE id = 1  -- Specify the ID of the record you want to duplicate
-                                )
-                                INSERT INTO employees (name, email, position, salary)
-                                SELECT name, email, position, salary
-                                FROM duplicated_record;""");
+        String s = """
+                WITH duplicated_record AS (SELECT descr,
+                                                  wt,
+                                                  amount,
+                                                  f1,
+                                                  f2,
+                                                  f3,
+                                                  rdd,
+                                                  rmm,
+                                                  rlim,
+                                                  rinitdd,
+                                                  rinitmm,
+                                                  rinityy,
+                                                  rfindd,
+                                                  rfinmm,
+                                                  rfinyy
+                                           FROM public.repeatedorder
+                                           WHERE id = (%s) -- Specify the ID of the record you want to duplicate
+                )
+                INSERT
+                INTO public.repeatedorder
+                SELECT (SELECT public.getfirstid()), *
+                FROM duplicated_record;""".formatted(data);
+        stmt.executeUpdate(s);
+
+        s = """
+                WITH duplicated_record AS (SELECT descr,
+                                                  wt,
+                                                  amount,
+                                                  plannedexecutiondate
+                                           FROM public.singleorder
+                                           WHERE id = (%s) -- Specify the ID of the record you want to duplicate
+                )
+                INSERT
+                INTO public.singleorder
+                SELECT (SELECT public.getfirstid()), *
+                FROM duplicated_record;""".formatted(data);
+        stmt.executeUpdate(s);
 
         return "OK";
     }

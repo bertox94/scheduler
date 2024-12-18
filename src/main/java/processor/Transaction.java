@@ -1,18 +1,18 @@
 package processor;
 
-import java.time.LocalDate;
+import java.sql.Date;
 
 public class Transaction {
     public long orderid;
     public String descr;
     public String executionDate;
-    public double amount;
+    public String amount;
 
-    public Transaction(long orderid, String descr, String executionDate, double amount) {
+    public Transaction(long orderid, String descr, Date executionDate, Double amount) {
         this.orderid = orderid;
         this.descr = descr;
-        this.executionDate = executionDate;
-        this.amount = amount;
+        this.executionDate = executionDate.toString();
+        this.amount = amount.toString();
     }
 
 }
