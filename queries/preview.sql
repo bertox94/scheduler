@@ -1,4 +1,6 @@
-CREATE OR REPLACE FUNCTION generate_order_occurrences()
+CREATE OR REPLACE FUNCTION generate_order_occurrences(
+    end_prev DATE
+)
     RETURNS VOID AS
 $$
 DECLARE
@@ -8,6 +10,7 @@ DECLARE
     end_date     DATE; -- Calculated end date
     iter         INT; --iteration number
 BEGIN
+    delete from public.transaction;
     FOR rec IN SELECT * FROM repeatedorder
         LOOP
             IF rec.f2 = 'days' THEN
@@ -29,6 +32,7 @@ BEGIN
                 RAISE EXCEPTION 'Invalid frequency type on order ID %', rec.id;
             END IF;
 
+            end_date= LEAST(end_date,end_prev);
 
             -- Loop until the planned date exceeds the end date
             iter := 1;
@@ -53,11 +57,10 @@ BEGIN
                         RAISE EXCEPTION 'Invalid frequency type on order ID %', rec.id;
                     END IF;
                     iter := iter + 1;
+                    end_date= LEAST(end_date,end_prev);
                 END LOOP;
         END LOOP;
 
     RAISE NOTICE 'Order occurrences generated successfully.';
 END;
 $$ LANGUAGE plpgsql;
-
-select generate_order_occurrences();

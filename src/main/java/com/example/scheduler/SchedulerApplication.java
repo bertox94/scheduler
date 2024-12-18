@@ -31,20 +31,15 @@ public class SchedulerApplication {
 
     public static void initialize_DB_connection() throws SQLException, IOException {
 
-        String jdbcURL = "jdbc:h2:./h2"; //./h2.mv.db   jdbc:h2:file:./h2
-        String username = "sa";
-        String password = "1234";
-
-        jdbcURL = "jdbc:postgresql://localhost:5432/postgres?ssl=require";//"jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
-        username = "postgres";
-        password = "admin";
+        String jdbcURL = "jdbc:postgresql://localhost:5432/postgres?ssl=require";//"jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
+        String username = "postgres";
+        String password = "admin";
 
         connection = DriverManager.getConnection(jdbcURL, username, password);
 
         System.out.println("Connected to Postgres remote database.");
 
         String sql = Files.readString(Paths.get(".\\queries\\initializeDatabase.sql"));
-        ;
         Statement statement = connection.createStatement();
         statement.execute(sql);
 

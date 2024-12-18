@@ -559,7 +559,6 @@
     <thead>
     <tr>
         <!--  <th scope="col">#</th> -->
-        <th scope="col">Planned date</th>
         <th scope="col">Execution date</th>
         <th scope="col">Description</th>
         <th scope="col">Amount</th>
@@ -737,53 +736,57 @@
     }
 
     function populate1() {
-        $.post("/orders", function (returnedData) {
-
-            let i;
-            if (returnedData === "")
-                return;
-
-            let el = $("#orders tbody");
-            el.empty();
-            el.append("        <tr style=\"background: #c7a800;\">\n" +
-                "            <td colspan=\"6\"></td>\n" +
-                "        </tr>");
-
-
-            let lines = returnedData.split("\n");
-
-            for (i = 0; i < lines.length - 1; i++) {
-                data = JSON.parse(lines[i])
-                el.append("        <tr id='" + data.id + "'>\n" +
-                    "            <td>" + data.descr + "</td>\n" +
-                    "            <td style = 'text-align: right'><div class=\"animate\">Loading</div></td>\n" +
-                    "            <td style = 'text-align: right'>" + data.amount + "</td>\n" +
-                    "            <td onclick='_duplicate(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
-                    "                                                           alt=\"No\" src=\"images/plus.svg\"></td>\n" +
-                    "            <td onclick='_update(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
-                    "                                                           alt=\"No\" src=\"images/pencil.svg\"></td>\n" +
-                    "            <td onclick='_delete(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
-                    "                                                           alt=\"No\" src=\"images/bin.svg\"></td>\n" +
-                    "            <td style=\"font-size:0;\">" + "" + "</td>\n" +
-                    "        </tr>"
-                )
-            }
-
-            i = 0;
-            el.find("tr").each(function () {
-                let ell = $(this).children();
-                if (ell.length > 1) {
-                    $.post("/schedule", {data: JSON.parse(lines[i]).id}, function (returnedData) {
-                        ell[1].removeChild(ell[1].firstChild)
-                        ell[1].append(returnedData)
-                    })
-                    i++;
-                }
-            });
-        }).fail(function () {
-            console.log("error")
-        })
     }
+
+    /*
+        function populate1() {
+            $.post("/orders", function (returnedData) {
+
+                let i;
+                if (returnedData === "")
+                    return;
+
+                let el = $("#orders tbody");
+                el.empty();
+                el.append("        <tr style=\"background: #c7a800;\">\n" +
+                    "            <td colspan=\"6\"></td>\n" +
+                    "        </tr>");
+
+
+                let lines = returnedData.split("\n");
+
+                for (i = 0; i < lines.length - 1; i++) {
+                    data = JSON.parse(lines[i])
+                    el.append("        <tr id='" + data.id + "'>\n" +
+                        "            <td>" + data.descr + "</td>\n" +
+                        "            <td style = 'text-align: right'><div class=\"animate\">Loading</div></td>\n" +
+                        "            <td style = 'text-align: right'>" + data.amount + "</td>\n" +
+                        "            <td onclick='_duplicate(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
+                        "                                                           alt=\"No\" src=\"images/plus.svg\"></td>\n" +
+                        "            <td onclick='_update(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
+                        "                                                           alt=\"No\" src=\"images/pencil.svg\"></td>\n" +
+                        "            <td onclick='_delete(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
+                        "                                                           alt=\"No\" src=\"images/bin.svg\"></td>\n" +
+                        "            <td style=\"font-size:0;\">" + "" + "</td>\n" +
+                        "        </tr>"
+                    )
+                }
+
+                i = 0;
+                el.find("tr").each(function () {
+                    let ell = $(this).children();
+                    if (ell.length > 1) {
+                        $.post("/schedule", {data: JSON.parse(lines[i]).id}, function (returnedData) {
+                            ell[1].removeChild(ell[1].firstChild)
+                            ell[1].append(returnedData)
+                        })
+                        i++;
+                    }
+                });
+            }).fail(function () {
+                console.log("error")
+            })
+        }*/
 
     function populate2() {
         $.post("/preview", {data: $("#previewenddate").val().replace(/\./g, '-')}, function (returnedData) {
@@ -805,7 +808,7 @@
                 data = lines[i]
                 el.append("        <tr id='" + data.id + "'>\n" +
                     "            <td>" + data.descr + "</td>\n" +
-                    "            <td style = 'text-align: right'>"+new Date(data.executionDate[0], data.executionDate[1] - 1, data.executionDate[2]).toLocaleDateString('it-IT')+"</td>\n" +
+                    "            <td style = 'text-align: right'>" + formatdate(new Date(data.executionDate[0], data.executionDate[1] - 1, data.executionDate[2])) + "</td>\n" +
                     "            <td style = 'text-align: right'>" + data.amount + "</td>\n" +
                     "            <td onclick='_duplicate(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
                     "                                                           alt=\"No\" src=\"images/plus.svg\"></td>\n" +
@@ -818,17 +821,17 @@
                 )
             }
 
-            i = 0;
-            el.find("tr").each(function () {
-                let ell = $(this).children();
-                if (ell.length > 1) {
-                    $.post("/schedule", {data: JSON.parse(lines[i]).id}, function (returnedData) {
-                        ell[1].removeChild(ell[1].firstChild)
-                        ell[1].append(returnedData)
-                    })
-                    i++;
-                }
-            });
+            // i = 0;
+            // el.find("tr").each(function () {
+            //     let ell = $(this).children();
+            //     if (ell.length > 1) {
+            //         $.post("/schedule", {data: JSON.parse(lines[i]).id}, function (returnedData) {
+            //             ell[1].removeChild(ell[1].firstChild)
+            //             ell[1].append(returnedData)
+            //         })
+            //         i++;
+            //     }
+            // });
 
 
             //if ($("#previewenddate").val().replace(/\./g,'-') !== obj.enddate || Number($("#initalbalance").val()) !== Number(obj.initialbal))
@@ -843,16 +846,16 @@
 
             let hhtml;
             let warn = " color:  red; font-weight: bold;";
-            let bold = " font-weight: bold;";
-            for (let i = 0; i < obj.html.length; i++) {
-                let khtml = obj.html[i];
+            let balance = $("#initalbalance").val();
+            for (let i = 0; i < obj.computed.length; i++) {
+                let khtml = obj.computed[i];
+                balance += khtml.amount;
                 hhtml = "<tr>\n";
-                hhtml += "  <td style='text-align:right;" + (parseFloat(khtml.balance) < 0 ? warn : '') + "'> " + formatdate(khtml.planneddate) + "</td>\n"
-                hhtml += "  <td style='text-align:right;" + (parseFloat(khtml.balance) < 0 ? warn : (khtml.planneddate !== khtml.executiondate ? bold : '')) + "'> " + formatdate(khtml.executiondate) + "</td>\n"
-                hhtml += "  <td style='text-align:right;" + (parseFloat(khtml.balance) < 0 ? warn : '') + "'>" + khtml.descr + "</td>\n"
-                hhtml += "  <td style='text-align:right;" + (parseFloat(khtml.balance) < 0 ? warn : '') + "'>" + parseFloat(khtml.amount).toFixed(2) + "</td>\n"
-                hhtml += "  <td style='text-align:right;" + (parseFloat(khtml.balance) < 0 ? warn : '') + "'>" + parseFloat(khtml.balance).toFixed(2) + "</td>\n"
-                hhtml += "  <td style='text-align:right;" + (parseFloat(khtml.balance) < 0 ? warn : '') + "'>" + (parseFloat(khtml.balance) === 0 ? "ALERT" : (parseFloat(khtml.balance) < 0 ? "FAILURE" : "OK")) + "</td>\n"
+                hhtml += "  <td style='text-align:right;" + (parseFloat(balance) < 0 ? warn : '') + "'>" + formatdate(khtml.executionDate) + "</td>\n"
+                hhtml += "  <td style='text-align:right;" + (parseFloat(balance) < 0 ? warn : '') + "'>" + khtml.descr + "</td>\n"
+                hhtml += "  <td style='text-align:right;" + (parseFloat(balance) < 0 ? warn : '') + "'>" + parseFloat(khtml.amount).toFixed(2) + "</td>\n"
+                hhtml += "  <td style='text-align:right;" + (parseFloat(balance) < 0 ? warn : '') + "'>" + parseFloat(balance).toFixed(2) + "</td>\n"
+                hhtml += "  <td style='text-align:right;" + (parseFloat(balance) < 0 ? warn : '') + "'>" + (parseFloat(balance) === 0 ? "ALERT" : (parseFloat(khtml.balance) < 0 ? "FAILURE" : "OK")) + "</td>\n"
                 hhtml += "</tr>\n";
                 $("#preview tbody").append(hhtml);
             }

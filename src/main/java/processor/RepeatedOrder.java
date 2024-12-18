@@ -134,17 +134,17 @@ public class RepeatedOrder extends Order {
     }
 
     public void setRfindd(String rfindd) {
-        if (!rfindd.equals("$"))
+        if (!rfindd.equals("$") && rlim)
             this.rfindd = Integer.parseInt(rfindd);
     }
 
     public void setRfinmm(String rfinmm) {
-        if (!rfinmm.equals("$"))
+        if (!rfinmm.equals("$") && rlim)
             this.rfinmm = Integer.parseInt(rfinmm);
     }
 
     public void setRfinyy(String rfinyy) {
-        if (!rfinyy.equals("$"))
+        if (!rfinyy.equals("$") && rlim)
             this.rfinyy = Integer.parseInt(rfinyy);
     }
 
