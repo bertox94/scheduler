@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.generate_order_occurrences(
+CREATE OR REPLACE FUNCTION public.duplicate(
     end_prev DATE
 )
     RETURNS VOID AS
@@ -11,6 +11,12 @@ DECLARE
     iter         INT; --iteration number
 BEGIN
     delete from public.transaction;
+
+    select *
+    into rec
+    from repeatedorder
+    where film_id = 200;
+
     FOR rec IN SELECT * FROM repeatedorder
         LOOP
             IF rec.f2 = 'days' THEN
