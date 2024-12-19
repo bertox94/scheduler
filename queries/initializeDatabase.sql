@@ -1,11 +1,11 @@
 CREATE TABLE IF NOT EXISTS public.singleorder
 (
-    id                   int4           NOT NULL,
-    descr                text           NULL,
-    wt                   bool           NULL,
-    amount               numeric(10, 2) NULL,
-    plannedexecutiondate date           NULL,
-    CONSTRAINT singleorder_pkey PRIMARY KEY (id)
+    id                     integer not null
+        primary key,
+    descr                  text,
+    wt                     boolean,
+    amount                 varchar(10),
+    planned_execution_date date
 );
 
 create table IF NOT EXISTS public.repeatedorder
