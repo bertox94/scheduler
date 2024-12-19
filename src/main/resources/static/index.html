@@ -239,12 +239,14 @@
                 <th style="border-bottom: 2px solid #c7a800; text-align: center" colspan="3">Frequency</th>
                 <th></th>
                 <th></th>
+                <th></th>
             </tr>
             <tr>
                 <th>Length</th>
                 <th>Range</th>
                 <th>Options</th>
                 <th>Limitedness</th>
+                <th>Repeat for</th>
             </tr>
             </thead>
             <tbody>
@@ -279,9 +281,20 @@
                 <td>
                     <div style="border: 2px solid #c7a800;">
                         <select id="rlim" onchange="fffff3(this)" style="padding: 1.8px" name="kkkk">
-                            <option selected style="color : black" value="limited">Limited</option>
+                            <option style="color : black" value="for a number of times">For a number of times
+                            </option>
+                            <option style="color : black" value="to a specific date">To a specific date
+                            </option>
                             <option style="color : black" value="unlimited">Unlimited</option>
                         </select>
+                    </div>
+                </td>
+                <!-- REPEATING TIMES -->
+                <td>
+                    <div style="border: 2px solid #c7a800; ">
+                        <input id="rf5" style="border: 0; padding-top: 3.2px; padding-bottom: 3.2px" name="f5" size="11"
+                               dirname="" type="number" min="0" max="1000000" value="0" onkeydown="setprev(this)"
+                               oninput="wrapperf5(this)">
                     </div>
                 </td>
             </tr>
@@ -665,69 +678,16 @@
 <script>
     function wrapperpreviewdate(K) {
         if (successdate(K))
-            populate2();
+            populate();
     }
 
     function wrapperpreviewbalance(K) {
         fixamount(K);
         if (successamount(K))
-            populate2();
+            populate();
     }
 
-    function populate1() {
-    }
-
-    /*
-        function populate1() {
-            $.post("/orders", function (returnedData) {
-
-                let i;
-                if (returnedData === "")
-                    return;
-
-                let el = $("#orders tbody");
-                el.empty();
-                el.append("        <tr style=\"background: #c7a800;\">\n" +
-                    "            <td colspan=\"6\"></td>\n" +
-                    "        </tr>");
-
-
-                let lines = returnedData.split("\n");
-
-                for (i = 0; i < lines.length - 1; i++) {
-                    data = JSON.parse(lines[i])
-                    el.append("        <tr id='" + data.id + "'>\n" +
-                        "            <td>" + data.descr + "</td>\n" +
-                        "            <td style = 'text-align: right'><div class=\"animate\">Loading</div></td>\n" +
-                        "            <td style = 'text-align: right'>" + data.amount + "</td>\n" +
-                        "            <td onclick='_duplicate(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
-                        "                                                           alt=\"No\" src=\"images/plus.svg\"></td>\n" +
-                        "            <td onclick='_update(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
-                        "                                                           alt=\"No\" src=\"images/pencil.svg\"></td>\n" +
-                        "            <td onclick='_delete(" + data.id + ")' style=\"cursor: pointer; padding: 5px\"><img style=\"vertical-align:middle;\" width=\"15px\"\n" +
-                        "                                                           alt=\"No\" src=\"images/bin.svg\"></td>\n" +
-                        "            <td style=\"font-size:0;\">" + "" + "</td>\n" +
-                        "        </tr>"
-                    )
-                }
-
-                i = 0;
-                el.find("tr").each(function () {
-                    let ell = $(this).children();
-                    if (ell.length > 1) {
-                        $.post("/schedule", {data: JSON.parse(lines[i]).id}, function (returnedData) {
-                            ell[1].removeChild(ell[1].firstChild)
-                            ell[1].append(returnedData)
-                        })
-                        i++;
-                    }
-                });
-            }).fail(function () {
-                console.log("error")
-            })
-        }*/
-
-    function populate2() {
+    function populate() {
         $.post("/preview", {data: $("#previewenddate").val().replace(/\./g, '-')}, function (returnedData) {
 
             let obj = JSON.parse(returnedData);
@@ -759,22 +719,6 @@
                     "        </tr>"
                 )
             }
-
-            // i = 0;
-            // el.find("tr").each(function () {
-            //     let ell = $(this).children();
-            //     if (ell.length > 1) {
-            //         $.post("/schedule", {data: JSON.parse(lines[i]).id}, function (returnedData) {
-            //             ell[1].removeChild(ell[1].firstChild)
-            //             ell[1].append(returnedData)
-            //         })
-            //         i++;
-            //     }
-            // });
-
-
-            //if ($("#previewenddate").val().replace(/\./g,'-') !== obj.enddate || Number($("#initalbalance").val()) !== Number(obj.initialbal))
-            //    return;
 
             $("#idm").val(parseFloat(obj.m).toFixed(2));
             $("#idm").prop("size", $("#idm").val().length)
@@ -814,8 +758,7 @@
     $("#l222").attr("width", $("#id12346").width())
     chart1([], [], []);
     chart2([], [], []);
-    populate1();
-    populate2();
+    populate();
 </script>
 
 <!-- FIX -->
@@ -1038,6 +981,11 @@
 <!-- FUNCTIONS -->
 <script>
 
+    function selectfirst(k) {
+        let el = document.getElementById(k);
+        el.innerHTML = $('#select option:nth-child(1)').val();
+    }
+
     function wrapperf1(k) {
         //fix
         let regex = /^0+/;
@@ -1054,16 +1002,17 @@
             k.parentElement.style.border = "2px solid #c7a800";
     }
 
+
     const ffff1 = function (k) {
         let rf2selected = $("#rf2 :selected").val();
 
         if (rf2selected === "$") {
             $("#rf3").hide(1200);
 
-            $("#rdd").hide(1200);
-            $("#rdd :selected").prop('selected', false);
-            $("#rmm").hide(1200);
-            $("#rmm :selected").prop('selected', false);
+            //$("#rdd").hide(1200);
+            //$("#rdd :selected").prop('selected', false);
+            //$("#rmm").hide(1200);
+            //$("#rmm :selected").prop('selected', false);
 
             $("#rinitdd").hide(1200);
             $("#rinitdd :selected").prop('selected', false);
@@ -1077,42 +1026,35 @@
         } else if (rf2selected === "days") {
             $("#rf3").hide(1200);
 
-            $("#rdd").hide(1200);
-            $("#rdd :selected").prop('selected', false);
-            $("#rmm").hide(1200);
-            $("#rmm :selected").prop('selected', false);
+            //$("#rinitdd").hide(1200);
+            //$("#rinitdd :selected").prop('selected', false);
+            //$("#rinitmm").hide(1200);
+            //$("#rinitmm :selected").prop('selected', false);
 
             $("#rinitdd").show(1200);
             $("#rinitmm").show(1200);
 
-            if ($("#rlim :selected").val() === "limited") {
-                $("#rfindd").show(1200);
-                $("#rfinmm").show(1200);
-                $("#rfinyy").show(1200);
-            }
+            selectfirst("rf5");
+
+            $("#rfindd").hide(1200);
+            $("#rfinmm").hide(1200);
+            $("#rfinyy").hide(1200);
+            $("#rf5").show(1200);
 
         } else if (rf2selected === "months") {
             $("#rf3").empty();
-            $("#rf3").append("<option value=\"eom\">End of month</option>")
+            $("#rf3").append("<option selected value=\"eom\">End of month</option>")
             $("#rf3").append("<option value=\"default\">Specific day</option>");
             $("#rf3").show(1200);
 
-            $("#rdd").hide(1200);
-            $("#rdd :selected").prop('selected', false);
-            $("#rmm").hide(1200);
-            $("#rmm :selected").prop('selected', false);
-
-            $("#rinitdd").hide(1200);
-            $("#rinitdd :selected").prop('selected', false);
             $("#rinitmm").show(1200);
+            $("#rinitdd :selected").prop('selected', false);
+            $("#rinitdd").hide(1200);
 
+            $("#rf5").show(1200);
             $("#rfindd").hide(1200);
-            $("#rfindd :selected").prop('selected', false);
-
-            if ($("#rlim :selected").val() === "limited") {
-                $("#rfinmm").show(1200);
-                $("#rfinyy").show(1200);
-            }
+            $("#rfinmm").hide(1200);
+            $("#rfinyy").hide(1200);
         } else if (rf2selected === "years") {
             $("#rf3").empty();
             $("#rf3").append("<option value=\"eoy\">End of year</option>")
@@ -1120,24 +1062,20 @@
             $("#rf3").append("<option value=\"default\">Specific day</option>");
             $("#rf3").show(1200);
 
-            $("#rdd").hide(1200);
-            $("#rdd :selected").prop('selected', false);
-            $("#rmm").hide(1200);
-            $("#rmm :selected").prop('selected', false);
+            // $("#rdd").hide(1200);
+            // $("#rdd :selected").prop('selected', false);
+            // $("#rmm").hide(1200);
+            // $("#rmm :selected").prop('selected', false);
 
             $("#rinitdd").hide(1200);
             $("#rinitdd :selected").prop('selected', false);
             $("#rinitmm").hide(1200);
             $("#rinitmm :selected").prop('selected', false);
 
+            $("#rf5").show(1200);
             $("#rfindd").hide(1200);
-            $("#rfindd :selected").prop('selected', false);
             $("#rfinmm").hide(1200);
-            $("#rfinmm :selected").prop('selected', false);
-
-            if ($("#rlim :selected").val() === "limited") {
-                $("#rfinyy").show(1200);
-            }
+            $("#rfinyy").hide(1200);
         }
     }
 
@@ -1148,28 +1086,28 @@
 
         if (rf2selected === "months") {
             if (rf3selected === "default") {
-                $('#rdd').show(1200);
-                $('#rmm').hide(1200);
-                $('#rmm :selected').prop('selected', false);
+                $('#rinitdd').show(1200);
+                $('#rinitmm').hide(1200);
+                $('#rinitmm :selected').prop('selected', false);
             } else if (rf3selected === "eom") {
-                $('#rdd').hide(1200);
-                $('#rdd :selected').prop('selected', false);
-                $('#rmm').hide(1200);
-                $('#rmm :selected').prop('selected', false);
+                $('#rinitdd').hide(1200);
+                $('#rinitdd :selected').prop('selected', false);
+                $('#rinitmm').hide(1200);
+                $('#rinitmm :selected').prop('selected', false);
             }
         } else if (rf2selected === "years") {
             if (rf3selected === "default") {
-                $('#rdd').show(1200);
-                $('#rmm').show(1200);
+                $('#rinitdd').show(1200);
+                $('#rinitmm').show(1200);
             } else if (rf3selected === "eom") {
-                $('#rdd').hide(1200);
-                $('#rdd :selected').prop('selected', false);
-                $('#rmm').show(1200);
+                $('#rinitdd').hide(1200);
+                $('#rinitdd :selected').prop('selected', false);
+                $('#rinitmm').show(1200);
             } else if (rf3selected === "eoy") {
-                $('#rdd').hide(1200);
-                $('#rdd :selected').prop('selected', false);
-                $('#rmm').hide(1200);
-                $('#rmm :selected').prop('selected', false);
+                $('#rinitdd').hide(1200);
+                $('#rinitdd :selected').prop('selected', false);
+                $('#rinitmm').hide(1200);
+                $('#rinitmm :selected').prop('selected', false);
             }
         }
 
@@ -1357,8 +1295,7 @@
                 amount: el.find("[name = amount]").val(),
             })
         }, function (returnedData) {
-            populate1();
-            populate2();
+            populate();
             console.log(returnedData)
         }).fail(function () {
             console.log("error")
@@ -1464,8 +1401,7 @@
             resetselect($("#rfinyy"))
             resetinputfield($("#ram"))
 
-            populate1();
-            populate2();
+            populate();
 
             console.log(returnedData)
         }).fail(function () {
@@ -1473,9 +1409,6 @@
         })
     }
 
-    function haltprocessor() {
-        $.post("/haltprocessor")
-    }
 </script>
 
 <script>
@@ -1486,13 +1419,12 @@
         }).fail(function () {
             console.log("error")
         })
-        populate2();
+        populate();
     }
 
     function _duplicate(_id) {
         $.post("/duplicate", {data: _id}, function (returnedData) {
-            populate1();
-            populate2();
+            populate();
             console.log(returnedData)
         }).fail(function () {
             console.log("error")
@@ -1523,7 +1455,7 @@
         }).fail(function () {
             console.log("error")
         })
-        populate2();
+        populate();
     }
 </script>
 

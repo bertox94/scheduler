@@ -151,15 +151,13 @@ public class MainController {
 
         PreparedStatement stmt = connection
                 .prepareStatement("INSERT INTO public.repeatedOrder VALUES (" +
-                                  "(SELECT public.getFirstId()),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+                                  "(SELECT public.getFirstId()),?,?,?,?,?,?,?,?,?,?,?,?,?);");
         stmt.setString(1, order.get("descr"));
         stmt.setBoolean(2, order.get("wt").equalsIgnoreCase("true"));
         stmt.setString(3, order.get("amount"));
         stmt.setInt(4, Integer.parseInt(order.get("f1")));
         stmt.setString(5, order.get("f2"));
         stmt.setString(6, order.get("f3"));
-        stmt.setInt(7, order.get("rdd").equals("$") ? 0 : Integer.parseInt(order.get("rdd")));
-        stmt.setInt(8, order.get("rmm").equals("$") ? 0 : Integer.parseInt(order.get("rmm")));
         stmt.setBoolean(9, order.get("rlim").equalsIgnoreCase("limited"));
         stmt.setInt(10, order.get("rinitdd").equals("$") ? 0 : Integer.parseInt(order.get("rinitdd")));
         stmt.setInt(11, order.get("rinitmm").equals("$") ? 0 : Integer.parseInt(order.get("rinitmm")));
