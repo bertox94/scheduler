@@ -163,10 +163,10 @@ public class MainController {
         stmt.setBoolean(9, order.get("rlim").equalsIgnoreCase("limited"));
         stmt.setInt(10, order.get("rinitdd").equals("$") ? 0 : Integer.parseInt(order.get("rinitdd")));
         stmt.setInt(11, order.get("rinitmm").equals("$") ? 0 : Integer.parseInt(order.get("rinitmm")));
-        stmt.setInt(12, order.get("rinityy").isEmpty() ? 0 : Integer.parseInt(order.get("rinityy")));
+        stmt.setInt(12, Integer.parseInt(order.get("rinityy")));
         stmt.setInt(13, order.get("rfindd").equals("$") ? 0 : Integer.parseInt(order.get("rfindd")));
         stmt.setInt(14, order.get("rfinmm").equals("$") ? 0 : Integer.parseInt(order.get("rfinmm")));
-        stmt.setInt(15, order.get("rfinyy").isEmpty() ? 0 : Integer.parseInt(order.get("rfinyy")));
+        stmt.setInt(15, Integer.parseInt(order.get("rfinyy")));
 
         stmt.executeUpdate();
         return "OK";

@@ -18,8 +18,6 @@ create table IF NOT EXISTS public.repeatedorder
     f1      integer,
     f2      text,
     f3      text,
-    rdd     integer,
-    rmm     integer,
     rlim    boolean,
     rinitdd integer,
     rinitmm integer,
@@ -82,35 +80,27 @@ BEGIN
     end_prev := to_timestamp(end_preview)::date;
     FOR rec IN SELECT * FROM repeatedorder
         LOOP
-            IF rec.f2 = 'days' THEN
-                curr_date := curr_date + INTERVAL '1 day' * rec.f1 * iter;
-            ELSIF rec.f2 = 'months' THEN
-                init_date := MAKE_DATE(rec.rinityy, rec.rinitmm, 1);
-                IF rec.rdd > EXTRACT('DAY' FROM (date_trunc('month', init_date) + interval '1 month - 1 day')::date) OR
-                   rec.f3 = 'eom' THEN
-                    init_date = (date_trunc('month', init_date) + interval '1 month - 1 day')::date;
-                ELSE
-                    init_date = MAKE_DATE(rec.rinityy, rec.rinitmm, rec.rdd);
-                END IF;
-            ELSIF rec.f2 = 'years' THEN
-                curr_date := curr_date + INTERVAL '1 year' * rec.f1 * iter;
+            curr_date = MAKE_DATE(rec.rinityy, rec.rinitmm, 1);
+            IF rec.rinitmm > EXTRACT('DAY' FROM (date_trunc('month', curr_date) + interval '1 month - 1 day')::date) OR
+               rec.f3 = 'eom' THEN
+                init_date = (date_trunc('month', init_date) + interval '1 month - 1 day')::date;
             ELSE
-                RAISE EXCEPTION 'Invalid frequency type on order ID %', rec.id;
+                curr_date = MAKE_DATE(rec.rinityy, rec.rinitmm, rec.rinitdd);
             END IF;
 
             IF rec.rlim THEN
-                end_date := MAKE_DATE(rec.rinityy, rec.rinitmm, 1);
-                IF rec.rdd > EXTRACT('DAY' FROM (date_trunc('month', end_date) + interval '1 month - 1 day')::date) OR
+                end_date := MAKE_DATE(rec.rfinyy, rec.rfinmm, 1);
+                IF rec.rfindd >
+                   EXTRACT('DAY' FROM (date_trunc('month', end_date) + interval '1 month - 1 day')::date) OR
                    rec.f3 = 'eom' THEN
                     end_date = (date_trunc('month', end_date) + interval '1 month - 1 day')::date;
                 ELSE
-                    end_date = MAKE_DATE(rec.rinityy, rec.rinitmm, rec.rdd);
+                    end_date = MAKE_DATE(rec.rfinyy, rec.rfinmm, rec.rfindd);
                 END IF;
                 end_date = LEAST(end_date, end_prev);
             ELSE
                 end_date = end_prev;
             END IF;
-
 
             -- Loop until the planned date exceeds the end date
             iter := 1;
@@ -123,7 +113,7 @@ BEGIN
 
                     -- Increment the planned date based on the frequency type
                     IF rec.f2 = 'days' THEN
-                        curr_date := curr_date + INTERVAL '1 day' * rec.f1 * iter;
+                        curr_date := init_date + INTERVAL '1 day' * rec.f1 * iter;
                     ELSIF rec.f2 = 'months' THEN
                         curr_date = init_date + INTERVAL '1 month' * rec.f1 * iter;
                         IF rec.f3 = 'eom' THEN
@@ -131,6 +121,11 @@ BEGIN
                         END IF;
                     ELSIF rec.f2 = 'years' THEN
                         curr_date := curr_date + INTERVAL '1 year' * rec.f1 * iter;
+                        IF rec.f3 = 'eom' THEN
+                            curr_date = (date_trunc('month', curr_date) + interval '1 month - 1 day')::date;
+                        ELSIF rec.f3 = 'eoy' THEN
+                            curr_date = date_trunc('year', curr_date) + interval '1 year - 1 day';
+                        END IF;
                     ELSE
                         RAISE EXCEPTION 'Invalid frequency type on order ID %', rec.id;
                     END IF;
