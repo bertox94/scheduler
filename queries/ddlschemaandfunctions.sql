@@ -10,21 +10,22 @@ CREATE TABLE IF NOT EXISTS public.singleorder
 
 create table IF NOT EXISTS public.repeatedorder
 (
-    id      integer not null
+    id             integer not null
         primary key,
-    descr   text,
-    wt      boolean,
-    amount  varchar(10),
-    f1      integer,
-    f2      text,
-    f3      text,
-    rlim    boolean,
-    rinitdd integer,
-    rinitmm integer,
-    rinityy integer,
-    rfindd  integer,
-    rfinmm  integer,
-    rfinyy  integer
+    descr          text,
+    wt             boolean,
+    amount         varchar(10),
+    f1             integer,
+    f2             text,
+    f3             text,
+    repeatingtimes integer,
+    rlim           varchar(20),
+    rinitdd        integer,
+    rinitmm        integer,
+    rinityy        integer,
+    rfindd         integer,
+    rfinmm         integer,
+    rfinyy         integer
 );
 
 create table IF NOT EXISTS transaction

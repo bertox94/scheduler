@@ -292,9 +292,9 @@
                 <!-- REPEATING TIMES -->
                 <td>
                     <div style="border: 2px solid #c7a800; ">
-                        <input id="rf5" style="border: 0; padding-top: 3.2px; padding-bottom: 3.2px" name="f5" size="11"
-                               dirname="" type="number" min="0" max="1000000" value="0" onkeydown="setprev(this)"
-                               oninput="wrapperf5(this)">
+                        <input id="rf5" style="border: 0; padding-top: 3.2px; padding-bottom: 3.2px"
+                               name="f5" size="11" dirname="" type="number" min="0" max="1000000" value="0"
+                               onkeydown="setprev(this)" oninput="wrapperf5(this)">
                     </div>
                 </td>
             </tr>
@@ -980,12 +980,6 @@
 
 <!-- FUNCTIONS -->
 <script>
-
-    function selectfirst(k) {
-        let el = document.getElementById(k);
-        el.innerHTML = $('#select option:nth-child(1)').val();
-    }
-
     function wrapperf1(k) {
         //fix
         let regex = /^0+/;
@@ -1002,134 +996,145 @@
             k.parentElement.style.border = "2px solid #c7a800";
     }
 
-
-    const ffff1 = function (k) {
+    const rf3_hyee78 = function () {
         let rf2selected = $("#rf2 :selected").val();
-
-        if (rf2selected === "$") {
+        if (rf2selected === "days") {
             $("#rf3").hide(1200);
-
-            //$("#rdd").hide(1200);
-            //$("#rdd :selected").prop('selected', false);
-            //$("#rmm").hide(1200);
-            //$("#rmm :selected").prop('selected', false);
-
-            $("#rinitdd").hide(1200);
-            $("#rinitdd :selected").prop('selected', false);
-            $("#rinitmm").hide(1200);
-            $("#rinitmm :selected").prop('selected', false);
-
-            $("#rfindd").hide(1200);
-            $("#rfindd :selected").prop('selected', false);
-            $("#rfinmm").hide(1200);
-            $("#rfinmm :selected").prop('selected', false);
-        } else if (rf2selected === "days") {
-            $("#rf3").hide(1200);
-
-            //$("#rinitdd").hide(1200);
-            //$("#rinitdd :selected").prop('selected', false);
-            //$("#rinitmm").hide(1200);
-            //$("#rinitmm :selected").prop('selected', false);
-
-            $("#rinitdd").show(1200);
-            $("#rinitmm").show(1200);
-
-            selectfirst("rf5");
-
-            $("#rfindd").hide(1200);
-            $("#rfinmm").hide(1200);
-            $("#rfinyy").hide(1200);
-            $("#rf5").show(1200);
-
         } else if (rf2selected === "months") {
-            $("#rf3").empty();
-            $("#rf3").append("<option selected value=\"eom\">End of month</option>")
-            $("#rf3").append("<option value=\"default\">Specific day</option>");
+            // $("#rf3").empty();
+            // $("#rf3").append("<option value=\"eom\">End of month</option>")
+            // $("#rf3").append("<option value=\"default\">Specific day</option>");
             $("#rf3").show(1200);
+        } else if (rf2selected === "years") {
+            // $("#rf3").empty();
+            // $("#rf3").append("<option value=\"eoy\">End of year</option>")
+            // $("#rf3").append("<option value=\"eom\">End of month</option>")
+            // $("#rf3").append("<option value=\"default\">Specific day</option>");
+            $("#rf3").show(1200);
+        }
+    }
 
+    const rf5_hyee78 = function () {
+        if ($("#rlim :selected").val() === "for a number of times") {
+            $("#rf5").show(1200);
+        } else
+            $("#rf5").hide(1200);
+    }
+
+    const rinitdd_hyee78 = function () {
+        if ($("#rf2 :selected").val() === "days") {
+            $("#rinitdd").show(1200);
+        } else if ($("#rf2 :selected").val() === "months") {
+            if ($("#rf3 :selected").val() === "eom")
+                $("#rinitdd").hide(1200);
+            else
+                $("#rinitdd").show(1200);
+        } else {
+            if ($("#rf3 :selected").val() === "eom" || $("#rf3 :selected").val() === "eoy")
+                $("#rinitdd").hide(1200);
+            else
+                $("#rinitdd").show(1200);
+        }
+    }
+
+    const rinitmm_hyee78 = function () {
+        let show;
+        if ($("#rf2 :selected").val() === "days") {
+            show = true;
+        } else if ($("#rf2 :selected").val() === "months") {
+            show = true;
+        } else {
+            show = $("#rf3 :selected").val() !== "eoy";
+        }
+        if (show)
             $("#rinitmm").show(1200);
-            $("#rinitdd :selected").prop('selected', false);
-            $("#rinitdd").hide(1200);
-
-            $("#rf5").show(1200);
-            $("#rfindd").hide(1200);
-            $("#rfinmm").hide(1200);
-            $("#rfinyy").hide(1200);
-        } else if (rf2selected === "years") {
-            $("#rf3").empty();
-            $("#rf3").append("<option value=\"eoy\">End of year</option>")
-            $("#rf3").append("<option value=\"eom\">End of month</option>")
-            $("#rf3").append("<option value=\"default\">Specific day</option>");
-            $("#rf3").show(1200);
-
-            // $("#rdd").hide(1200);
-            // $("#rdd :selected").prop('selected', false);
-            // $("#rmm").hide(1200);
-            // $("#rmm :selected").prop('selected', false);
-
-            $("#rinitdd").hide(1200);
-            $("#rinitdd :selected").prop('selected', false);
+        else
             $("#rinitmm").hide(1200);
-            $("#rinitmm :selected").prop('selected', false);
-
-            $("#rf5").show(1200);
-            $("#rfindd").hide(1200);
-            $("#rfinmm").hide(1200);
-            $("#rfinyy").hide(1200);
-        }
     }
 
-    const fffff2 = function (k) {
-
-        let rf2selected = $("#rf2 :selected").val();
-        let rf3selected = $("#rf3 :selected").val();
-
-        if (rf2selected === "months") {
-            if (rf3selected === "default") {
-                $('#rinitdd').show(1200);
-                $('#rinitmm').hide(1200);
-                $('#rinitmm :selected').prop('selected', false);
-            } else if (rf3selected === "eom") {
-                $('#rinitdd').hide(1200);
-                $('#rinitdd :selected').prop('selected', false);
-                $('#rinitmm').hide(1200);
-                $('#rinitmm :selected').prop('selected', false);
-            }
-        } else if (rf2selected === "years") {
-            if (rf3selected === "default") {
-                $('#rinitdd').show(1200);
-                $('#rinitmm').show(1200);
-            } else if (rf3selected === "eom") {
-                $('#rinitdd').hide(1200);
-                $('#rinitdd :selected').prop('selected', false);
-                $('#rinitmm').show(1200);
-            } else if (rf3selected === "eoy") {
-                $('#rinitdd').hide(1200);
-                $('#rinitdd :selected').prop('selected', false);
-                $('#rinitmm').hide(1200);
-                $('#rinitmm :selected').prop('selected', false);
-            }
-        }
-
-        forgivef2($("#rf2")[0])
-    }
-
-    const fffff3 = function (k) {
-
-        if ($("#rlim :selected").val() === "unlimited") {
-            $("#rfindd").hide(1200);
-            $("#rfinmm").hide(1200);
-            $("#rfinyy").hide(1200);
-        } else if ($("#rlim :selected").val() === "limited") {
+    const rfindd_hyee78 = function () {
+        if ($("#rlim :selected").val() === "to a specific date") {
             if ($("#rf2 :selected").val() === "days") {
                 $("#rfindd").show(1200);
+            } else if ($("#rf2 :selected").val() === "months") {
+                if ($("#rf3 :selected").val() === "eom")
+                    $("#rfindd").hide(1200);
+                else
+                    $("#rfindd").show(1200);
+            } else {
+                if ($("#rf3 :selected").val() === "eom" || $("#rf3 :selected").val() === "eoy")
+                    $("#rfindd").hide(1200);
+                else
+                    $("#rfindd").show(1200);
+            }
+        } else {
+            $("#rfindd").hide(1200);
+        }
+    }
+
+    const rfinmm_hyee78 = function () {
+        if ($("#rlim :selected").val() === "to a specific date") {
+            if ($("#rf2 :selected").val() === "days") {
                 $("#rfinmm").show(1200);
             } else if ($("#rf2 :selected").val() === "months") {
                 $("#rfinmm").show(1200);
+            } else {
+                if ($("#rf3 :selected").val() === "eoy")
+                    $("#rfinmm").hide(1200);
+                else
+                    $("#rfinmm").show(1200);
             }
+        } else
+            $("#rfinmm").hide(1200);
+    }
+
+    const rfinyy_hyee78 = function () {
+        if ($("#rlim :selected").val() === "to a specific date")
             $("#rfinyy").show(1200);
+        else
+            $("#rfinyy").hide(1200);
+    }
+
+
+    const ffff1 = function (k) {
+        let rf2selected = $("#rf2 :selected").val();
+        $("#rf3").empty();
+        if (rf2selected === "months") {
+            $("#rf3").append("<option selected value=\"eom\">End of month</option>")
+            $("#rf3").append("<option value=\"default\">Specific day</option>");
+        } else if (rf2selected === "years") {
+            $("#rf3").append("<option selected value=\"eoy\">End of year</option>")
+            $("#rf3").append("<option value=\"eom\">End of month</option>")
+            $("#rf3").append("<option value=\"default\">Specific day</option>");
         }
 
+        rf3_hyee78();
+        rf5_hyee78();
+        rinitdd_hyee78();
+        rinitmm_hyee78();
+        rfindd_hyee78();
+        rfinmm_hyee78();
+        rfinyy_hyee78();
+    }
+
+    const fffff2 = function (k) {
+        rf3_hyee78();
+        rf5_hyee78();
+        rinitdd_hyee78();
+        rinitmm_hyee78();
+        rfindd_hyee78();
+        rfinmm_hyee78();
+        rfinyy_hyee78();
+    }
+
+    const fffff3 = function (k) {
+        rf3_hyee78();
+        rf5_hyee78();
+        rinitdd_hyee78();
+        rinitmm_hyee78();
+        rfindd_hyee78();
+        rfinmm_hyee78();
+        rfinyy_hyee78();
     }
 
     const adaptdate = function (k) {

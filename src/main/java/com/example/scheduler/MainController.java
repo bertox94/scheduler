@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class MainController {
-
     static Connection connection;
     static final ObjectMapper mapper = new ObjectMapper();
     static AtomicInteger id_user = new AtomicInteger(0);
@@ -25,15 +24,10 @@ public class MainController {
     static void initialize() throws IOException, SQLException {
         String jdbcURL = "jdbc:postgresql://localhost:5432/postgres?ssl=require";
         jdbcURL = "jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
-        String username = "avnadmin";
+        String username = "applicationuser";
         String password = "";
 
         connection = DriverManager.getConnection(jdbcURL, username, password);
-        mapper.registerModule(new JavaTimeModule());
-
-        String sql = Files.readString(Paths.get(".\\queries\\initializeDatabase.sql"));
-        Statement statement = connection.createStatement();
-        statement.execute(sql);
     }
 
     @ResponseBody
