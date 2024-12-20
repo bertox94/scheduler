@@ -1,169 +1,83 @@
 package com.example.scheduler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import processor.Order;
-import processor.Scheduler;
-import processor.Transaction;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class MainController {
-
     static Connection connection;
-    private ObjectMapper mapper = new ObjectMapper();
+    static final ObjectMapper mapper = new ObjectMapper();
+    static AtomicInteger id_user = new AtomicInteger(0);
 
-    @ResponseBody
-    @PostMapping(path = "/orders")
-    public String orders() {
-        StringBuilder data = new StringBuilder();
-        try {
-            Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT encoded FROM public.orders " +
-                    " order by substring(encoded from (locate('\"descr\":', encoded))) asc ;");
+    static void initialize() throws IOException, SQLException {
+        String jdbcURL = "jdbc:postgresql://localhost:5432/postgres?ssl=require";
+        //jdbcURL = "jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
+        String username = "postgres";//"applicationuser";
+        String password = "admin";
 
-            while (rs.next()) {
-                data.append(rs.getString(1)).append("\n");
-            }
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-        return data.toString();
-    }
-
-    @ResponseBody
-    @PostMapping(path = "/schedule")
-    public String schedule(@RequestParam String data) throws JsonProcessingException {
-
-        Map<String, String> mao = mapper.readValue(data, Map.class);
-        Order order = new Order(new HashMap<>(mao));
-
-        do order.schedule();
-        while (order.isExpired() || order.getEffectiveExecutionDate().isBefore(LocalDate.now()));
-
-        LocalDate exDate = order.getEffectiveExecutionDate();
-        if (exDate.isBefore(LocalDate.now()) || order.isExpired())
-            return "It is in the past";
-        else
-            return exDate.toString();
+        connection = DriverManager.getConnection(jdbcURL, username, password);
     }
 
     @ResponseBody
     @PostMapping(path = "/preview")
-    public String preview(@RequestParam String data) throws JsonProcessingException {
+    public String preview(@RequestParam String data) throws IOException, SQLException {
 
-        LocalDate endDate = LocalDate.parse(data.substring(0, data.indexOf('\n')), DateTimeFormatter.ofPattern("y-M-d"));//LocalDate.of(Integer.parseInt(mao.get("year")),Integer.parseInt(mao.get("month")),Integer.parseInt(mao.get("day")));
-        double balance = Double.parseDouble(data.substring(data.indexOf('\n') + 1));
+        LocalDate endDate = LocalDate.parse(data, DateTimeFormatter.ofPattern("y-M-d"));
+        endDate = endDate.getDayOfMonth() > endDate.lengthOfMonth() ? endDate.withDayOfMonth(endDate.lengthOfMonth()) : endDate;
+        long iduser = System.currentTimeMillis() * 10 + id_user.incrementAndGet();
+        PreparedStatement stmt = connection.prepareStatement("SELECT public.generateOrderOccurrences(?,?);");
+        stmt.setLong(1, endDate.toEpochDay() * 86400);
+        stmt.setLong(2, iduser);
 
-        List<Order> orderList = new ArrayList<>();
+        stmt.executeQuery();
 
-        String[] orders = orders().split("\n");
+        ResultSet rs = connection.createStatement().executeQuery(Files
+                .readString(Paths.get(".\\queries\\getSummary.sql"))
+                .replace("?", String.valueOf(iduser)));
+        List<Transaction> summary = new ArrayList<>();
 
-        for (String line : orders) {
-            if (!line.isEmpty())
-                orderList.add(new Order(new HashMap<String, String>(mapper.readValue(line, Map.class))));
+        while (rs.next()) {
+            summary.add(new Transaction(rs.getLong("orderid"),
+                    rs.getString("descr"),
+                    rs.getDate("date"),
+                    rs.getDouble("amount")));
         }
 
-        List<Transaction> records = Scheduler.preview(orderList, endDate);
-        records.sort(Comparator.comparing(Transaction::getEffectiveExecutionDate));
+        Map<String, List<Transaction>> map = new HashMap<>();
+        map.put("summary", summary);
 
-        StringJoiner resp = new StringJoiner(",", "{", "}");
-        resp.add("\"enddate\":\"" + endDate + "\"");
-        resp.add("\"initialbal\":\"" + balance + "\"");
 
-        double bal = balance;
-        StringJoiner sj = new StringJoiner(",", "[", "]");
-        for (Transaction record : records) {
-            bal += record.amount;
-            StringJoiner sjj = new StringJoiner(",", "{", "}");
-            sjj.add("\"executiondate\":\"" + record.effectiveExecutionDate + "\"");
-            sjj.add("\"planneddate\":\"" + record.plannedExecutionDate + "\"");
-            sjj.add("\"descr\":\"" + record.descr + "\"");
-            sjj.add("\"amount\":\"" + record.amount + "\"");
-            sjj.add("\"balance\":\"" + bal + "\"");
-            sj.add(sjj.toString());
+        rs = connection.createStatement().executeQuery("SELECT * FROM public.TRANSACTION ORDER BY executiondate");
+        List<Transaction> computed = new ArrayList<>();
+
+        while (rs.next()) {
+            computed.add(new Transaction(rs.getLong("orderid"),
+                    rs.getString("descr"),
+                    rs.getDate("executionDate"),
+                    rs.getDouble("amount")));
         }
 
-        resp.add("\"html\":" + sj);
+        map.put("computed", computed);
 
-        LocalDate today = LocalDate.now();
-        List<LocalDate> allDates = new ArrayList<>();
-        List<Double> allDatesBalance = new ArrayList<>();
-        List<Double> balancePerTransaction = new ArrayList<>();
+        stmt = connection.prepareStatement("DELETE FROM public.TRANSACTION WHERE iduser = ?;");
+        stmt.setLong(1, iduser);
+        stmt.executeUpdate();
 
-        while (!today.isAfter(endDate)) {
-            allDates.add(today);
-            today = today.plusDays(1);
-        }
+        id_user.decrementAndGet();
+        return mapper.writeValueAsString(map);
 
-        bal = balance;
-        for (LocalDate date : allDates) {
-            double tot = 0;
-            for (Transaction record : records) {
-                if (record.effectiveExecutionDate.equals(date)) {
-                    tot += record.amount;
-                }
-            }
-            bal += tot;
-            allDatesBalance.addLast(bal);
-        }
-
-        bal = balance;
-        for (Transaction record : records) {
-            bal += record.amount;
-            balancePerTransaction.addLast(bal);
-        }
-
-        sj = new StringJoiner(",", "[", "]");
-        for (LocalDate date : allDates) {
-            sj.add("\"" + date + "\"");
-        }
-        resp.add("\"arr1\":" + sj);
-
-        sj = new StringJoiner(",", "[", "]");
-        for (Double bala : allDatesBalance) {
-            sj.add("\"" + bala + "\"");
-        }
-        resp.add("\"arr2\":" + sj);
-
-
-        Result result = linRegression(allDatesBalance);
-        resp.add("\"m\":\"" + result.slope() + "\"");
-        resp.add("\"q\":\"" + result.intercept() + "\"");
-
-        sj = new StringJoiner(",", "[", "]");
-        for (long i = 0; i < allDatesBalance.size(); i++) {
-            sj.add("\"" + String.format(Locale.US, "%.2f", (result.slope() * i + result.intercept())) + "\"");
-        }
-        resp.add("\"arr3\":" + sj);
-
-
-        sj = new StringJoiner(",", "[", "]");
-        for (Transaction transaction : records) {
-            sj.add("\"" + transaction.effectiveExecutionDate + "\"");
-        }
-        resp.add("\"arr4\":" + sj);
-
-        sj = new StringJoiner(",", "[", "]");
-        for (Transaction transaction : records) {
-            sj.add("\"" + transaction.amount + "\"");
-        }
-        resp.add("\"arr5\":" + sj);
-
-        sj = new StringJoiner(",", "[", "]");
-        for (Double bala : balancePerTransaction) {
-            sj.add("\"" + bala + "\"");
-        }
-        resp.add("\"arr6\":" + sj);
-
-        return resp.toString();
     }
 
     private static Result linRegression(List<Double> allDatesBalance) {
@@ -206,99 +120,103 @@ public class MainController {
     }
 
     @ResponseBody
-    @PostMapping(path = "/addnew")
-    public String addnew(@RequestParam String data) {
-        try {
-            String _SUB_Q_ID = " (  SELECT ROW_NUMBER " +
-                    "               FROM (" +
-                    "                  SELECT ROW_NUMBER() OVER (ORDER BY id) as ROW_NUMBER, id " +
-                    "                  FROM ( " +
-                    "                      SELECT id    " +
-                    "                      FROM orders " +
-                    "                      UNION ALL  " +
-                    "                      SELECT COALESCE(MAX(id),2) AS id   " +
-                    "                      FROM orders         " +
-                    "                  ) AS sub1 " +
-                    "               ) AS sub2       " +
-                    "               WHERE ROW_NUMBER != id      " +
-                    "               LIMIT 1) ";
-            Statement stmt = connection.createStatement();
-            stmt.executeUpdate(
-                    "INSERT INTO public.orders (id, encoded) " +
-                            "VALUES(" + _SUB_Q_ID + ", '{\"id\":'|| '\"' || " + _SUB_Q_ID + "|| '\"," + data.substring(1) + "');");
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-            return "KO";
-        }
+    @PostMapping(path = "/addnewsingle")
+    public String addnewsingle(@RequestParam String data) throws IOException, SQLException {
+
+        Map<String, String> order = mapper.readValue(data, Map.class);
+
+        PreparedStatement stmt = connection
+                .prepareStatement("INSERT INTO public.singleOrder VALUES ((SELECT public.getFirstId()),?,?,?,?);");
+        stmt.setString(1, order.get("descr"));
+        stmt.setString(2, order.get("wt"));
+        stmt.setString(3, order.get("amount"));
+        stmt.setDate(4, Date.valueOf(order.get("date")));
+
+        stmt.executeUpdate();
+        return "OK";
+    }
+
+
+    @ResponseBody
+    @PostMapping(path = "/addnewrepeated")
+    public String addnewrepeated(@RequestParam String data) throws IOException, SQLException {
+
+        Map<String, String> order = mapper.readValue(data, Map.class);
+
+        PreparedStatement stmt = connection
+                .prepareStatement("INSERT INTO public.repeatedOrder VALUES (" +
+                        "(SELECT public.getFirstId()),?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+        stmt.setString(1, order.get("descr"));
+        stmt.setBoolean(2, order.get("wt").equalsIgnoreCase("true"));
+        stmt.setString(3, order.get("amount"));
+        stmt.setInt(4, Integer.parseInt(order.get("f1")));
+        stmt.setString(5, order.get("f2"));
+        stmt.setString(6, order.get("f3"));
+        stmt.setInt(7, Integer.parseInt(order.get("repeatingtimes")));
+        stmt.setString(8, order.get("rlim"));
+        stmt.setInt(9, order.get("rinitdd").equals("$") ? 0 : Integer.parseInt(order.get("rinitdd")));
+        stmt.setInt(10, order.get("rinitmm").equals("$") ? 0 : Integer.parseInt(order.get("rinitmm")));
+        stmt.setInt(11, Integer.parseInt(order.get("rinityy")));
+        stmt.setInt(12, order.get("rfindd").equals("$") ? 0 : Integer.parseInt(order.get("rfindd")));
+        stmt.setInt(13, order.get("rfinmm").equals("$") ? 0 : Integer.parseInt(order.get("rfinmm")));
+        stmt.setInt(14, order.get("rfinyy").isEmpty() ? 0 : Integer.parseInt(order.get("rfinyy")));
+
+        stmt.executeUpdate();
         return "OK";
     }
 
     @ResponseBody
-    @PostMapping(path = "/get")
-    public String get(@RequestParam String _id) {
-        String resp = "";
-        try {
-
-            Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery(
-                    "SELECT encoded " +
-                            " FROM public.orders " +
-                            " WHERE id = " + _id + ";");
-
-            if (rs.next())
-                resp = rs.getString(1);
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-            return "KO";
-        }
-        return resp;
-    }
-
-    @ResponseBody
     @PostMapping(path = "/delete")
-    public String delete(@RequestParam String data) {
-        try {
-            Statement stmt = connection.createStatement();
-            stmt.executeUpdate("DELETE FROM public.orders WHERE id = " + data + ";");
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-            return "KO";
-        }
+    public String delete(@RequestParam String data) throws SQLException {
+        Statement stmt = connection.createStatement();
+        stmt.executeUpdate("DELETE FROM public.repeatedOrder WHERE id = " + data + ";");
+        stmt.executeUpdate("DELETE FROM public.singleOrder WHERE id = " + data + ";");
         return "OK";
     }
 
     @ResponseBody
     @PostMapping(path = "/duplicate")
-    public String duplicate(@RequestParam String data) {
-        try {
-            Statement stmt = connection.createStatement();
+    public String duplicate(@RequestParam String data) throws IOException, SQLException {
+        Statement stmt = connection.createStatement();
+        String s = """
+                WITH duplicated_record AS (SELECT descr,
+                                                  wt,
+                                                  amount,
+                                                  f1,
+                                                  f2,
+                                                  f3,
+                                                  rdd,
+                                                  rmm,
+                                                  rlim,
+                                                  rinitdd,
+                                                  rinitmm,
+                                                  rinityy,
+                                                  rfindd,
+                                                  rfinmm,
+                                                  rfinyy
+                                           FROM public.repeatedorder
+                                           WHERE id = (%s) -- Specify the ID of the record you want to duplicate
+                )
+                INSERT
+                INTO public.repeatedorder
+                SELECT (SELECT public.getfirstid()), *
+                FROM duplicated_record;""".formatted(data);
+        stmt.executeUpdate(s);
 
-            String _SUB_Q_ID = " (  SELECT ROW_NUMBER " +
-                    "               FROM (" +
-                    "                  SELECT ROW_NUMBER() OVER (ORDER BY id) AS ROW_NUMBER, id " +
-                    "                  FROM ( " +
-                    "                      SELECT id    " +
-                    "                      FROM orders " +
-                    "                      UNION ALL  " +
-                    "                      SELECT COALESCE(MAX(id),2) AS id   " +
-                    "                      FROM orders         " +
-                    "                  ) AS sub1 " +
-                    "               ) AS sub2       " +
-                    "               WHERE ROW_NUMBER != id      " +
-                    "               LIMIT 1) ";
+        s = """
+                WITH duplicated_record AS (SELECT descr,
+                                                  wt,
+                                                  amount,
+                                                  plannedexecutiondate
+                                           FROM public.singleorder
+                                           WHERE id = (%s) -- Specify the ID of the record you want to duplicate
+                )
+                INSERT
+                INTO public.singleorder
+                SELECT (SELECT public.getfirstid()), *
+                FROM duplicated_record;""".formatted(data);
+        stmt.executeUpdate(s);
 
-            stmt.executeUpdate(" INSERT INTO orders (id, encoded)" +
-                    "SELECT" + _SUB_Q_ID + """
-                    , REGEXP_REPLACE(encoded, '"id":"[0-9]*"', '"id":"' || """ + _SUB_Q_ID + """
-                    || '"' )
-                    FROM orders
-                    WHERE id = """ + data + ";");
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-            return "KO";
-        }
         return "OK";
     }
 }
