@@ -83,27 +83,23 @@ BEGIN
         LOOP
 
             IF rec.f3 = 'eoy' THEN
-                curr_date = MAKE_DATE(rec.rinityy, 1, 1);
-                curr_date = (date_trunc('year', curr_date) + interval '1 year - 1 day')::date;
+                init_date = (date_trunc('year', MAKE_DATE(rec.rinityy, 1, 1)) + interval '1 year - 1 day')::date;
             ELSIF rec.f3 = 'eom' OR
-                  rec.rinitdd > EXTRACT('DAY' FROM (date_trunc('month', curr_date) + interval '1 month - 1 day')::date)
+                  rec.rinitdd > EXTRACT('DAY' FROM (date_trunc('month', MAKE_DATE(rec.rinityy, rec.rinitmm, 1)) + interval '1 month - 1 day')::date)
             THEN
-                curr_date = MAKE_DATE(rec.rinityy, rec.rinitmm, 1);
-                curr_date = (date_trunc('month', init_date) + interval '1 month - 1 day')::date;
+                init_date = (date_trunc('month', MAKE_DATE(rec.rinityy, rec.rinitmm, 1)) + interval '1 month - 1 day')::date;
             ELSE
-                curr_date = MAKE_DATE(rec.rinityy, rec.rinitmm, rec.rinitdd);
+                init_date = MAKE_DATE(rec.rinityy, rec.rinitmm, rec.rinitdd);
             end if;
 
             IF rec.rlim = 'to a specific date' THEN
                 IF rec.f3 = 'eoy' THEN
-                    end_date = MAKE_DATE(rec.rfinyy, 1, 1);
-                    end_date = (date_trunc('year', end_date) + interval '1 year - 1 day')::date;
+                    end_date = (date_trunc('year', MAKE_DATE(rec.rfinyy, 1, 1)) + interval '1 year - 1 day')::date;
                 ELSIF rec.f3 = 'eom' or
                       rec.rfindd >
-                      EXTRACT('DAY' FROM (date_trunc('month', end_date) + interval '1 month - 1 day')::date)
+                      EXTRACT('DAY' FROM (date_trunc('month',  MAKE_DATE(rec.rfinyy, rec.rfinmm, 1)) + interval '1 month - 1 day')::date)
                 THEN
-                    end_date = MAKE_DATE(rec.rfinyy, rec.rfinmm, 1);
-                    end_date = (date_trunc('month', end_date) + interval '1 month - 1 day')::date;
+                    end_date = (date_trunc('month', MAKE_DATE(rec.rfinyy, rec.rfinmm, 1)) + interval '1 month - 1 day')::date;
                 ELSE
                     end_date = MAKE_DATE(rec.rfinyy, rec.rfinmm, rec.rfindd);
                 end if;
