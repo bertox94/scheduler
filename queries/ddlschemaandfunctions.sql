@@ -78,7 +78,7 @@ DECLARE
     end_prev  DATE; -- Calculated end date
     iter      INT; --iteration number
 BEGIN
-    end_prev := to_timestamp(end_preview)::date;
+    end_prev := to_timestamp(end_preview * 86400)::date;
     FOR rec IN SELECT * FROM repeatedorder
         LOOP
 
