@@ -1,3 +1,4 @@
 Scheduler application.
 
-Soon master will be discontinued and postgres branch will merge into master.
+* update graphical interface
+* use spring JPA, if convenient.
