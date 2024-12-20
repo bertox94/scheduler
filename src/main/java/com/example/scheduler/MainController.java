@@ -23,9 +23,9 @@ public class MainController {
 
     static void initialize() throws IOException, SQLException {
         String jdbcURL = "jdbc:postgresql://localhost:5432/postgres?ssl=require";
-        jdbcURL = "jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
-        String username = "applicationuser";
-        String password = "";
+        //jdbcURL = "jdbc:postgresql://pg-1c4a5739-mail-a916.e.aivencloud.com:26114/defaultdb?ssl=require";
+        String username = "postgres";//"applicationuser";
+        String password = "admin";
 
         connection = DriverManager.getConnection(jdbcURL, username, password);
     }
@@ -145,20 +145,21 @@ public class MainController {
 
         PreparedStatement stmt = connection
                 .prepareStatement("INSERT INTO public.repeatedOrder VALUES (" +
-                                  "(SELECT public.getFirstId()),?,?,?,?,?,?,?,?,?,?,?,?,?);");
+                        "(SELECT public.getFirstId()),?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
         stmt.setString(1, order.get("descr"));
         stmt.setBoolean(2, order.get("wt").equalsIgnoreCase("true"));
         stmt.setString(3, order.get("amount"));
         stmt.setInt(4, Integer.parseInt(order.get("f1")));
         stmt.setString(5, order.get("f2"));
         stmt.setString(6, order.get("f3"));
-        stmt.setBoolean(9, order.get("rlim").equalsIgnoreCase("limited"));
-        stmt.setInt(10, order.get("rinitdd").equals("$") ? 0 : Integer.parseInt(order.get("rinitdd")));
-        stmt.setInt(11, order.get("rinitmm").equals("$") ? 0 : Integer.parseInt(order.get("rinitmm")));
-        stmt.setInt(12, Integer.parseInt(order.get("rinityy")));
-        stmt.setInt(13, order.get("rfindd").equals("$") ? 0 : Integer.parseInt(order.get("rfindd")));
-        stmt.setInt(14, order.get("rfinmm").equals("$") ? 0 : Integer.parseInt(order.get("rfinmm")));
-        stmt.setInt(15, Integer.parseInt(order.get("rfinyy")));
+        stmt.setInt(7, Integer.parseInt(order.get("repeatingtimes")));
+        stmt.setString(8, order.get("rlim"));
+        stmt.setInt(9, order.get("rinitdd").equals("$") ? 0 : Integer.parseInt(order.get("rinitdd")));
+        stmt.setInt(10, order.get("rinitmm").equals("$") ? 0 : Integer.parseInt(order.get("rinitmm")));
+        stmt.setInt(11, Integer.parseInt(order.get("rinityy")));
+        stmt.setInt(12, order.get("rfindd").equals("$") ? 0 : Integer.parseInt(order.get("rfindd")));
+        stmt.setInt(13, order.get("rfinmm").equals("$") ? 0 : Integer.parseInt(order.get("rfinmm")));
+        stmt.setInt(14, order.get("rfinyy").isEmpty() ? 0 : Integer.parseInt(order.get("rfinyy")));
 
         stmt.executeUpdate();
         return "OK";

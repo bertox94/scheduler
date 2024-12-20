@@ -19,7 +19,7 @@ create table IF NOT EXISTS public.repeatedorder
     f2             text,
     f3             text,
     repeatingtimes integer,
-    rlim           varchar(20),
+    rlim           text,
     rinitdd        integer,
     rinitmm        integer,
     rinityy        integer,
@@ -81,32 +81,39 @@ BEGIN
     end_prev := to_timestamp(end_preview)::date;
     FOR rec IN SELECT * FROM repeatedorder
         LOOP
-            curr_date = MAKE_DATE(rec.rinityy, rec.rinitmm, 1);
-            IF rec.rinitmm > EXTRACT('DAY' FROM (date_trunc('month', curr_date) + interval '1 month - 1 day')::date) OR
-               rec.f3 = 'eom' THEN
-                init_date = (date_trunc('month', init_date) + interval '1 month - 1 day')::date;
+
+            IF rec.f3 = 'eoy' THEN
+                curr_date = MAKE_DATE(rec.rinityy, 1, 1);
+                curr_date = (date_trunc('year', curr_date) + interval '1 year - 1 day')::date;
+            ELSIF rec.f3 = 'eom' OR
+                  rec.rinitdd > EXTRACT('DAY' FROM (date_trunc('month', curr_date) + interval '1 month - 1 day')::date)
+            THEN
+                curr_date = MAKE_DATE(rec.rinityy, rec.rinitmm, 1);
+                curr_date = (date_trunc('month', init_date) + interval '1 month - 1 day')::date;
             ELSE
                 curr_date = MAKE_DATE(rec.rinityy, rec.rinitmm, rec.rinitdd);
-            END IF;
+            end if;
 
-            IF rec.rlim THEN
-                end_date := MAKE_DATE(rec.rfinyy, rec.rfinmm, 1);
-                IF rec.rfindd >
-                   EXTRACT('DAY' FROM (date_trunc('month', end_date) + interval '1 month - 1 day')::date) OR
-                   rec.f3 = 'eom' THEN
+            IF rec.rlim = 'to a specific date' THEN
+                IF rec.f3 = 'eoy' THEN
+                    end_date = MAKE_DATE(rec.rfinyy, 1, 1);
+                    end_date = (date_trunc('year', end_date) + interval '1 year - 1 day')::date;
+                ELSIF rec.f3 = 'eom' or
+                      rec.rfindd >
+                      EXTRACT('DAY' FROM (date_trunc('month', end_date) + interval '1 month - 1 day')::date)
+                THEN
+                    end_date = MAKE_DATE(rec.rfinyy, rec.rfinmm, 1);
                     end_date = (date_trunc('month', end_date) + interval '1 month - 1 day')::date;
                 ELSE
                     end_date = MAKE_DATE(rec.rfinyy, rec.rfinmm, rec.rfindd);
-                END IF;
-                end_date = LEAST(end_date, end_prev);
-            ELSE
-                end_date = end_prev;
+                end if;
             END IF;
 
             -- Loop until the planned date exceeds the end date
             iter := 1;
             curr_date = init_date;
-            WHILE curr_date <= end_date
+            WHILE curr_date <= end_prev and (rec.rlim = 'to a specific date' and curr_date <= end_date or
+                                             rec.rlim = 'for a number of times' and iter <= rec.repeatingtimes)
                 LOOP
                     -- Insert the occurrence into the new table
                     INSERT INTO public.transaction (orderid, iduser, descr, executiondate, amount)
@@ -133,7 +140,6 @@ BEGIN
                     iter := iter + 1;
                 END LOOP;
         END LOOP;
-
     RAISE NOTICE 'Order occurrences generated successfully.';
 END;
 $$ LANGUAGE plpgsql;
